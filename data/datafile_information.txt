@@ -1,0 +1,70 @@
+    GranuleUR: SC:ASTGTM.003:2342570827
+    InsertTime: 2019-06-26T12:48:04.680Z
+    LastUpdate: 2019-08-05T07:35:06.452Z
+    Collection:
+        DataSetId: ASTER Global Digital Elevation Model V003
+    DataGranule:
+        SizeMBDataGranule: 33.0769
+        ProducerGranuleId: ASTGTMV003_S45E168.zip
+        DayNightFlag: UNSPECIFIED
+        ProductionDateTime: 2019-06-14T07:01:37Z
+        LocalVersionId: 3
+    PGEVersionClass:
+        PGEVersion: 3.0
+    Temporal:
+        RangeDateTime:
+            BeginningDateTime: 2000-03-01T00:00:00.000000Z
+            EndingDateTime: 2013-11-30T23:59:59.000000Z
+    Spatial:
+        HorizontalSpatialDomain:
+            Geometry:
+                BoundingRectangle:
+                    WestBoundingCoordinate: 167.9998611
+                    NorthBoundingCoordinate: -43.9998611
+                    EastBoundingCoordinate: 169.0001389
+                    SouthBoundingCoordinate: -45.0001389
+    Platforms:
+        Platform:
+            ShortName: TERRA
+            Instruments:
+                Instrument:
+                    ShortName: ASTER
+                    Sensors:
+                        Sensor:
+                            ShortName: VNIR
+    Campaigns:
+        Campaign:
+            ShortName: TERRA
+    AdditionalAttributes:
+        AdditionalAttribute:
+            Name: identifier_product_doi_authority
+            Values:
+                Value: http://dx.doi.org
+        AdditionalAttribute:
+            Name: identifier_product_doi
+            Values:
+                Value: 10.5067/ASTER/ASTGTM.003
+    OnlineAccessURLs:
+        OnlineAccessURL:
+            URL: https://e4ftl01.cr.usgs.gov//ASTER_B/ASTT/ASTGTM.003/2000.03.01/ASTGTMV003_S45E168.zip
+            URLDescription: This file may be downloaded directly from this link
+            MimeType: application/zip
+    OnlineResources:
+        OnlineResource:
+            URL: https://doi.org/10.5067/ASTER/ASTGTM.003
+            Description: The Landing Page for this file may be accessed directly from this link
+            Type: DOI
+            MimeType: text/html
+        OnlineResource:
+            URL: https://e4ftl01.cr.usgs.gov//WORKING/BRWS/Browse.001/2019.06.26/ASTGTMV003_S45E168.1.jpg
+            Description: This Browse file may be downloaded directly from this link
+            Type: BROWSE
+            MimeType: image/jpeg
+        OnlineResource:
+            URL: https://e4ftl01.cr.usgs.gov//ASTER_B/ASTT/ASTGTM.003/2000.03.01/ASTGTMV003_S45E168.zip.xml
+            Description: This Metadata file may be downloaded directly from this link
+            Type: EXTENDED METADATA
+            MimeType: text/xml
+    Orderable: true
+    DataFormat: GeoTIFF
+    Visible: true
