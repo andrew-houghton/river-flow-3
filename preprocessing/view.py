@@ -1,7 +1,7 @@
-from PIL import Image
-import numpy
 from pathlib import Path
 
+import numpy
+from PIL import Image
 
 data_folder = Path(__file__).absolute().parent.parent.joinpath('data')
 print("Loading file")
