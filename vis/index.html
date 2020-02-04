@@ -2,7 +2,13 @@
 <script type="text/javascript" src="js/main.js"></script>
 <style type="text/css" src="css/main.css"></style>
 <body>
-<svg>
-  <image x="0" y="0" height="600" width="600" xlink:href="img/true_colour_resized.jpg" />
+<svg width="1000" height="1000"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <image height="600" width="600" xlink:href="img/true_colour_resized.jpg" />
+  <image height="600" width="600" xlink:href="img/height_map.png" opacity="0.3">
+    <animate attributeName="opacity"
+             values="0;1;0" dur="5s"
+             repeatCount="indefinite"/>
+  </image>
 </svg>
 </body>
