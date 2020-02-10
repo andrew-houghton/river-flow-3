@@ -1,6 +1,40 @@
-body {width: 800px;
-    height: 700px;
+/* Layout */
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
 }
-svg {width: 600px;
-    height: 600px;
+div.outer {
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
+svg {
+  flex-grow : 1;
+}
+
+/* Nav buttons */
+.navbox {
+  margin: 0 auto;
+}
+.navlink {
+  text-decoration: none;
+  display: inline-block;
+  padding: 8px 16px;
+  text-align: center;
+}
+.navlink:hover {
+  background-color: #ddd;
+  color: black;
+}
+.previous {
+  background-color: #f1f1f1;
+  color: black;
+}
+.next {
+  background-color: #4CAF50;
+  color: white;
+}
+.round {
+  border-radius: 50%;
 }
