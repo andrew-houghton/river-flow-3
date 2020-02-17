@@ -14,8 +14,6 @@ imarray = numpy.array(im)
 
 @app.route("/height/<int:col_min>/<int:row_min>/<int:col_max>/<int:row_max>")
 def height(col_min, row_min, col_max, row_max):
-    assert col_min >= 0
-    assert row_min >= 0
     assert col_max < imarray.shape[0]
     assert row_max < imarray.shape[1]
 
