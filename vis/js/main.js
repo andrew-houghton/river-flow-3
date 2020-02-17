@@ -3,6 +3,21 @@ var maxState = 10;
 var svg;
 var isStateLocked = false;
 
+var getJSON = function(url, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'json';
+    xhr.onload = function() {
+        var status = xhr.status;
+        if (status === 200) {
+            callback(null, xhr.response);
+        } else {
+            callback(status, xhr.response);
+        }
+    };
+    xhr.send();
+};
+
 function getFadeElement(fadeOut, id = null) {
     var animateFade = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
     animateFade.setAttribute("attributeName", "opacity");
@@ -61,6 +76,14 @@ function transitionToState(stateIndex, previousState) {
     } else if (stateIndex == 0 && previousState == 1) {
         isStateLocked = true;
         swapImagesBack()
+    } else if (stateIndex == 2 && previousState == 1) {
+        console.log("Should clear image")
+    } else if (stateIndex == 1 && previousState == 2) {
+        console.log("Should add image")
+    } else if (stateIndex == 3 && previousState == 2) {
+        height = getJSON("http://localhost:5000/height/3000/3000/3010/3010", function(status, response) {
+            console.log(response);
+        });
     }
     console.log("Changing to state " + stateIndex)
 }

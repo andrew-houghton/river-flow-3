@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify, render_template
 from pathlib import Path
-
+from flask_cors import CORS
 import numpy
 from PIL import Image
 
 app = Flask(__name__)
-
+CORS(app)
 
 data_folder = Path(__file__).absolute().parent.joinpath("data")
 im = Image.open(data_folder.joinpath("ASTGTMV003_S45E168_dem.tif"))

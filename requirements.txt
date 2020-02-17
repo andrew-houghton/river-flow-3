@@ -1,2 +1,5 @@
 pillow
 numpy
+Flask-Cors==3.0.8
+flask
+Pillow
