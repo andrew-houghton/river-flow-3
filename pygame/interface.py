@@ -23,7 +23,6 @@ class GameState:
         pygame.display.flip()
 
         self.running = True
-        self.in_transition = False
         self.screen_number = 0
 
     def find_centered_image_corner(self, image):
@@ -34,9 +33,10 @@ class GameState:
     @staticmethod
     def get_image(filename, size):
         image = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", filename))
-        surface = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
         scale_ratio = min(size[0] / image.size[0], size[1] / image.size[1])
         new_size = [int(i * scale_ratio) for i in image.size]
+        image = image.resize(new_size)
+        surface = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
         return pygame.transform.scale(surface, new_size)
 
     def handle_events(self):
@@ -57,8 +57,9 @@ class GameState:
             self.clock.tick(self.framerate)
 
     def next_screen(self):
-        self.in_transition = True
         self.screen_number += 1
+        print(f"Change to screen number {self.screen_number}")
+
         if self.screen_number == 1:
             fading_out_image = self.true_colour.copy()
 
@@ -72,8 +73,9 @@ class GameState:
                 self.screen.blit(fading_out_image, corner)
                 pygame.display.flip()
                 self.clock.tick(self.framerate)
+        if self.screen_number == 2:
+            pass
 
-        self.in_transition = False
 
 
 if __name__ == "__main__":
