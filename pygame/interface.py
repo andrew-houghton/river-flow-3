@@ -2,7 +2,7 @@ from random import randint
 from pathlib import Path
 import os
 
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame
 from PIL import Image
 
@@ -78,22 +78,51 @@ class GameState:
             self.screen.blit(self.height_map, corner)
             pygame.display.flip()
         if self.screen_number == 2:
-            selection_pixel_size = self.compute_selection_pixel_size()
-            left = randint(0, self.dem_size[0] - 1 - selection_pixel_size[0])
-            right = left + selection_pixel_size[0]
-            top = randint(0, self.dem_size[1] - 1 - selection_pixel_size[1])
-            bottom = top + selection_pixel_size[1]
+            self.selection_pixel_size = self.compute_selection_pixel_size()
+            left = randint(0, self.dem_size[0] - 1 - self.selection_pixel_size[0])
+            right = left + self.selection_pixel_size[0]
+            top = randint(0, self.dem_size[1] - 1 - self.selection_pixel_size[1])
+            bottom = top + self.selection_pixel_size[1]
 
             # Todo, pull height data
             # Todo, save selection in good format
             height_map = self.height_map.copy()
-            points = ((left, top), (right, top), (right, bottom), (left, bottom))
-            scaled_points = [(int(x*self.scale_ratio), int(y*self.scale_ratio)) for x,y in points]
+            self.points = ((left, top), (right, top), (right, bottom), (left, bottom))
+            self.scaled_points = [(int(x * self.scale_ratio), int(y * self.scale_ratio)) for x, y in self.points]
+            # print(self.points)
+            # print(self.scaled_points)
             green_colour = (0, 204, 51)
             line_width = 3
-            pygame.draw.polygon(height_map, green_colour, scaled_points, line_width)
+            pygame.draw.polygon(height_map, green_colour, self.scaled_points, line_width)
             self.screen.blit(height_map, self.find_centered_image_corner(height_map))
             pygame.display.flip()
+        if self.screen_number == 3:
+            # Get the section of the image
+            # Scale up the section step by step
+            rect_args = (
+                self.scaled_points[0][0],
+                self.scaled_points[0][1],
+                self.scaled_points[2][0] - self.scaled_points[0][0],
+                self.scaled_points[2][1] - self.scaled_points[0][1],
+            )
+            selected_surface = self.height_map.subsurface(pygame.Rect(*rect_args))
+            screen_size = self.screen.get_rect().size
+            height_map_corner = self.find_centered_image_corner(self.height_map)
+            num_steps = 30
+            for i in range(num_steps + 1):
+                # Smoothly transition the scale of the selected surface to cover the whole screen
+                proportion_finished = (i/num_steps)**4
+                proportion_unfinished = 1 - proportion_finished
+
+                left = int((height_map_corner[0] + rect_args[0]) * proportion_unfinished)
+                right = int((height_map_corner[0] + rect_args[0] + rect_args[2]) * proportion_unfinished + screen_size[0] * proportion_finished)
+                top = int((height_map_corner[1] + rect_args[1]) * proportion_unfinished)
+                bottom = int((height_map_corner[1] + rect_args[1] + rect_args[3]) * proportion_unfinished + screen_size[1] * proportion_finished)
+
+                width, height = right-left, bottom-top
+                resized_selected_surface = pygame.transform.scale(selected_surface, (width, height))
+                self.screen.blit(resized_selected_surface, (left, top))
+                pygame.display.flip()
 
     def compute_selection_pixel_size(self, max_pixels=100):
         # Wide dimension of the screen is max_pixels
