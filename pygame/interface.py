@@ -120,9 +120,23 @@ class GameState:
                 bottom = int((height_map_corner[1] + rect_args[1] + rect_args[3]) * proportion_unfinished + screen_size[1] * proportion_finished)
 
                 width, height = right-left, bottom-top
-                resized_selected_surface = pygame.transform.scale(selected_surface, (width, height))
-                self.screen.blit(resized_selected_surface, (left, top))
+                self.resized_selected_surface = pygame.transform.scale(selected_surface, (width, height))
+                self.screen.blit(self.resized_selected_surface, (left, top))
                 pygame.display.flip()
+        if self.screen_number == 4:
+            # Create circles
+            # Remove background image
+            num_steps = 30
+            resized_selected_surface = self.resized_selected_surface.copy()
+            for i in range(num_steps, 0, -1):
+                image_alpha = int(255 * i / num_steps)
+                print(f"setting image image_alpha {image_alpha}")
+                resized_selected_surface.set_alpha(image_alpha)
+                self.screen.fill((0,0,0))
+                self.screen.blit(resized_selected_surface, (0, 0))
+                pygame.display.flip()
+                self.clock.tick(self.framerate)
+
 
     def compute_selection_pixel_size(self, max_pixels=100):
         # Wide dimension of the screen is max_pixels
