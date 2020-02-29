@@ -9,22 +9,35 @@ class GameState:
         infoObject = pygame.display.Info()
         size = (infoObject.current_w, infoObject.current_h)
         print(f"Creating fullscreen window {size}")
-        self.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
-
+        # self.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
+        self.screen = pygame.display.set_mode(size)
+        self.framerate = 165
         self.clock = pygame.time.Clock()
 
-        # Set startup state
-        true_colour = self.get_image("true_colour_resized.jpg")
-        ballrect = true_colour.get_rect()
-        self.screen.blit(true_colour, ballrect)
+        # Load images
+        self.true_colour = self.get_image("true_colour_resized.jpg", size)
+        self.height_map = self.get_image("ASTGTMV003_S45E168_dem.png", size)
+
+        # Set startup image
+        self.screen.blit(self.true_colour, self.find_centered_image_corner(self.true_colour))
         pygame.display.flip()
 
         self.running = True
+        self.in_transition = False
+        self.screen_number = 0
+
+    def find_centered_image_corner(self, image):
+        screen_center = self.screen.get_rect().center
+        image_position = image.get_rect().center
+        return (screen_center[0]-image_position[0], screen_center[1]-image_position[1])
 
     @staticmethod
-    def get_image(filename):
+    def get_image(filename, size):
         image = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", filename))
-        return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
+        surface = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
+        scale_ratio = min(size[0]/image.size[0], size[1]/image.size[1])
+        new_size = [int(i*scale_ratio) for i in image.size]
+        return pygame.transform.scale(surface, new_size)
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -36,13 +49,32 @@ class GameState:
                 elif event.key == pygame.K_LEFT:
                     pass
                 elif event.key == pygame.K_RIGHT:
-                    pass
+                    self.next_screen()
 
     def main_loop(self):
-        pygame.display.update()
         while self.running:
             self.handle_events()
-            self.clock.tick(165)
+            self.clock.tick(self.framerate)
+
+    def next_screen(self):
+        self.in_transition = True
+        self.screen_number += 1
+        if self.screen_number == 1:
+            fading_out_image = self.true_colour.copy()
+            corner = self.find_centered_image_corner(fading_out_image)
+            num_steps = 100
+
+            for i in range(num_steps):
+                self.screen.fill((0,0,0))
+                image_alpha = 255-int(255/num_steps*i)
+                print(f"Fading image to alpha {image_alpha}")
+                fading_out_image.set_alpha(image_alpha)
+                self.screen.blit(fading_out_image, corner)
+                pygame.display.flip()
+                self.clock.tick(self.framerate)
+
+        self.in_transition = False
+
 
 if __name__ == "__main__":
     game = GameState()
