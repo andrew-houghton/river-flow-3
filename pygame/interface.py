@@ -29,14 +29,14 @@ class GameState:
     def find_centered_image_corner(self, image):
         screen_center = self.screen.get_rect().center
         image_position = image.get_rect().center
-        return (screen_center[0]-image_position[0], screen_center[1]-image_position[1])
+        return (screen_center[0] - image_position[0], screen_center[1] - image_position[1])
 
     @staticmethod
     def get_image(filename, size):
         image = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", filename))
         surface = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
-        scale_ratio = min(size[0]/image.size[0], size[1]/image.size[1])
-        new_size = [int(i*scale_ratio) for i in image.size]
+        scale_ratio = min(size[0] / image.size[0], size[1] / image.size[1])
+        new_size = [int(i * scale_ratio) for i in image.size]
         return pygame.transform.scale(surface, new_size)
 
     def handle_events(self):
@@ -65,8 +65,8 @@ class GameState:
             corner = self.find_centered_image_corner(fading_out_image)
             num_steps = 60
 
-            for i in range(num_steps,0,-1):
-                image_alpha = int(255*i/num_steps)
+            for i in range(num_steps, 0, -1):
+                image_alpha = int(255 * i / num_steps)
                 fading_out_image.set_alpha(image_alpha)
                 self.screen.blit(self.height_map, corner)
                 self.screen.blit(fading_out_image, corner)
