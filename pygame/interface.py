@@ -61,14 +61,14 @@ class GameState:
         self.screen_number += 1
         if self.screen_number == 1:
             fading_out_image = self.true_colour.copy()
-            corner = self.find_centered_image_corner(fading_out_image)
-            num_steps = 100
 
-            for i in range(num_steps):
-                self.screen.fill((0,0,0))
-                image_alpha = 255-int(255/num_steps*i)
-                print(f"Fading image to alpha {image_alpha}")
+            corner = self.find_centered_image_corner(fading_out_image)
+            num_steps = 60
+
+            for i in range(num_steps,0,-1):
+                image_alpha = int(255*i/num_steps)
                 fading_out_image.set_alpha(image_alpha)
+                self.screen.blit(self.height_map, corner)
                 self.screen.blit(fading_out_image, corner)
                 pygame.display.flip()
                 self.clock.tick(self.framerate)
