@@ -125,14 +125,19 @@ class GameState:
                 pygame.display.flip()
         if self.screen_number == 4:
             # Create circles
+            circles_surface = pygame.Surface(self.screen.get_rect().size, pygame.SRCALPHA, 32)
+            circles_surface = circles_surface.convert_alpha()
+
             # Remove background image
             num_steps = 30
             resized_selected_surface = self.resized_selected_surface.copy()
+            self.screen.fill((0,0,0))
             for i in range(num_steps, 0, -1):
                 image_alpha = int(255 * i / num_steps)
                 print(f"setting image image_alpha {image_alpha}")
                 resized_selected_surface.set_alpha(image_alpha)
                 self.screen.fill((0,0,0))
+                # self.screen.blit(circles_surface, (0, 0))
                 self.screen.blit(resized_selected_surface, (0, 0))
                 pygame.display.flip()
                 self.clock.tick(self.framerate)
