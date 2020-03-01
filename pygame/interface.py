@@ -112,15 +112,21 @@ class GameState:
             for i in range(num_steps + 1):
                 # Smoothly transition the scale of the selected surface to cover the whole screen
                 # TODO: change this section so that it looks like a flat surface moving closer to an observer
-                proportion_finished = (i/num_steps)**4
+                proportion_finished = (i / num_steps) ** 4
                 proportion_unfinished = 1 - proportion_finished
 
                 left = int((height_map_corner[0] + rect_args[0]) * proportion_unfinished)
-                right = int((height_map_corner[0] + rect_args[0] + rect_args[2]) * proportion_unfinished + screen_size[0] * proportion_finished)
+                right = int(
+                    (height_map_corner[0] + rect_args[0] + rect_args[2]) * proportion_unfinished
+                    + screen_size[0] * proportion_finished
+                )
                 top = int((height_map_corner[1] + rect_args[1]) * proportion_unfinished)
-                bottom = int((height_map_corner[1] + rect_args[1] + rect_args[3]) * proportion_unfinished + screen_size[1] * proportion_finished)
+                bottom = int(
+                    (height_map_corner[1] + rect_args[1] + rect_args[3]) * proportion_unfinished
+                    + screen_size[1] * proportion_finished
+                )
 
-                width, height = right-left, bottom-top
+                width, height = right - left, bottom - top
                 self.resized_selected_surface = pygame.transform.scale(selected_surface, (width, height))
                 self.screen.blit(self.resized_selected_surface, (left, top))
                 pygame.display.flip()
@@ -133,16 +139,14 @@ class GameState:
             # Remove background image
             num_steps = 30
             resized_selected_surface = self.resized_selected_surface.copy()
-            self.screen.fill((0,0,0))
             for i in range(num_steps, 0, -1):
                 image_alpha = int(255 * i / num_steps)
                 resized_selected_surface.set_alpha(image_alpha)
-                self.screen.fill((0,0,0))
+                self.screen.fill((0, 0, 0))
                 self.screen.blit(circles_surface, (0, 0))
                 self.screen.blit(resized_selected_surface, (0, 0))
                 pygame.display.flip()
                 self.clock.tick(self.framerate)
-
 
     def compute_selection_pixel_size(self, max_pixels=100):
         # Wide dimension of the screen is max_pixels
@@ -153,11 +157,18 @@ class GameState:
 
     def draw_circles(self, surface, dimensions):
         screen_size = self.screen.get_rect().size
-        float_pixel_size = (screen_size[0]/dimensions[0], screen_size[1]/dimensions[1])
-        center_offset = (float_pixel_size[0]/2, float_pixel_size[1]/2)
-        circle_radius = int(max(*float_pixel_size)*0.35)
+        float_pixel_size = (screen_size[0] / dimensions[0], screen_size[1] / dimensions[1])
+        center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
+        circle_radius = int(max(*float_pixel_size) * 0.35)
 
-        pygame.draw.circle(surface, (255,255,255), (100,100), circle_radius)
+        for x in range(dimensions[0]):
+            for y in range(dimensions[1]):
+                pygame.draw.circle(
+                    surface,
+                    (255, 255, 255),
+                    (int(x * float_pixel_size[0] + center_offset[0]), int(y * float_pixel_size[1] + center_offset[1])),
+                    circle_radius,
+                )
 
 
 if __name__ == "__main__":
