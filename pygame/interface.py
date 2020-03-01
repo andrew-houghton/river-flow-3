@@ -111,6 +111,7 @@ class GameState:
             num_steps = 30
             for i in range(num_steps + 1):
                 # Smoothly transition the scale of the selected surface to cover the whole screen
+                # TODO: change this section so that it looks like a flat surface moving closer to an observer
                 proportion_finished = (i/num_steps)**4
                 proportion_unfinished = 1 - proportion_finished
 
@@ -127,6 +128,7 @@ class GameState:
             # Create circles
             circles_surface = pygame.Surface(self.screen.get_rect().size, pygame.SRCALPHA, 32)
             circles_surface = circles_surface.convert_alpha()
+            self.draw_circles(circles_surface, self.selection_pixel_size)
 
             # Remove background image
             num_steps = 30
@@ -134,10 +136,9 @@ class GameState:
             self.screen.fill((0,0,0))
             for i in range(num_steps, 0, -1):
                 image_alpha = int(255 * i / num_steps)
-                print(f"setting image image_alpha {image_alpha}")
                 resized_selected_surface.set_alpha(image_alpha)
                 self.screen.fill((0,0,0))
-                # self.screen.blit(circles_surface, (0, 0))
+                self.screen.blit(circles_surface, (0, 0))
                 self.screen.blit(resized_selected_surface, (0, 0))
                 pygame.display.flip()
                 self.clock.tick(self.framerate)
@@ -149,6 +150,14 @@ class GameState:
         screen_size = self.screen.get_rect().size
         pixel_size = max(screen_size) / max_pixels
         return int(screen_size[0] / pixel_size), int(screen_size[1] / pixel_size)
+
+    def draw_circles(self, surface, dimensions):
+        screen_size = self.screen.get_rect().size
+        float_pixel_size = (screen_size[0]/dimensions[0], screen_size[1]/dimensions[1])
+        center_offset = (float_pixel_size[0]/2, float_pixel_size[1]/2)
+        circle_radius = int(max(*float_pixel_size)*0.35)
+
+        pygame.draw.circle(surface, (255,255,255), (100,100), circle_radius)
 
 
 if __name__ == "__main__":
