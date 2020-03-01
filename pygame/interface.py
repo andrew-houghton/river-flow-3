@@ -34,14 +34,15 @@ class GameState:
         image_position = image.get_rect().center
         return (screen_center[0] - image_position[0], screen_center[1] - image_position[1])
 
-    def get_image(self, filename, size):
+    def get_image(self, filename, size=None):
         image = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", filename))
-        self.scale_ratio = min(size[0] / image.size[0], size[1] / image.size[1])
-        self.dem_size = image.size
-        new_size = [int(i * self.scale_ratio) for i in image.size]
-        image = image.resize(new_size)
+        if size:
+            self.scale_ratio = min(size[0] / image.size[0], size[1] / image.size[1])
+            self.dem_size = image.size
+            new_size = [int(i * self.scale_ratio) for i in image.size]
+            image = image.resize(new_size)
         surface = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
-        return pygame.transform.scale(surface, new_size)
+        return surface
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -89,8 +90,6 @@ class GameState:
             height_map = self.height_map.copy()
             self.points = ((left, top), (right, top), (right, bottom), (left, bottom))
             self.scaled_points = [(int(x * self.scale_ratio), int(y * self.scale_ratio)) for x, y in self.points]
-            # print(self.points)
-            # print(self.scaled_points)
             green_colour = (0, 204, 51)
             line_width = 3
             pygame.draw.polygon(height_map, green_colour, self.scaled_points, line_width)
@@ -99,35 +98,37 @@ class GameState:
         if self.screen_number == 3:
             # Get the section of the image
             # Scale up the section step by step
-            rect_args = (
-                self.scaled_points[0][0],
-                self.scaled_points[0][1],
-                self.scaled_points[2][0] - self.scaled_points[0][0],
-                self.scaled_points[2][1] - self.scaled_points[0][1],
+            original_res_height_map = self.get_image("ASTGTMV003_S45E168_dem.png")
+            selected_surface = original_res_height_map.subsurface(
+                pygame.Rect(
+                    self.points[0][0],
+                    self.points[0][1],
+                    self.points[2][0] - self.points[0][0],
+                    self.points[2][1] - self.points[0][1],
+                )
             )
-            selected_surface = self.height_map.subsurface(pygame.Rect(*rect_args))
             screen_size = self.screen.get_rect().size
-            height_map_corner = self.find_centered_image_corner(self.height_map)
-            num_steps = 30
+            map_corner = self.find_centered_image_corner(self.height_map)
+            num_steps = 200
             for i in range(num_steps + 1):
                 # Smoothly transition the scale of the selected surface to cover the whole screen
                 # TODO: change this section so that it looks like a flat surface moving closer to an observer
                 proportion_finished = (i / num_steps) ** 4
                 proportion_unfinished = 1 - proportion_finished
 
-                left = int((height_map_corner[0] + rect_args[0]) * proportion_unfinished)
-                right = int(
-                    (height_map_corner[0] + rect_args[0] + rect_args[2]) * proportion_unfinished
+                width = (
+                    self.selection_pixel_size[0] * self.scale_ratio * proportion_unfinished
                     + screen_size[0] * proportion_finished
                 )
-                top = int((height_map_corner[1] + rect_args[1]) * proportion_unfinished)
-                bottom = int(
-                    (height_map_corner[1] + rect_args[1] + rect_args[3]) * proportion_unfinished
+                height = (
+                    self.selection_pixel_size[1] * self.scale_ratio * proportion_unfinished
                     + screen_size[1] * proportion_finished
                 )
 
-                width, height = right - left, bottom - top
-                self.resized_selected_surface = pygame.transform.scale(selected_surface, (width, height))
+                left = int((map_corner[0] + self.scaled_points[0][0]) * proportion_unfinished)
+                top = int((map_corner[1] + self.scaled_points[0][1]) * proportion_unfinished)
+
+                self.resized_selected_surface = pygame.transform.scale(selected_surface, (int(width), int(height)))
                 self.screen.blit(self.resized_selected_surface, (left, top))
                 pygame.display.flip()
         if self.screen_number == 4:
@@ -165,7 +166,7 @@ class GameState:
             for y in range(dimensions[1]):
                 pygame.draw.circle(
                     surface,
-                    (255, 255, 255),
+                    (100, 100, 100),
                     (int(x * float_pixel_size[0] + center_offset[0]), int(y * float_pixel_size[1] + center_offset[1])),
                     circle_radius,
                 )
