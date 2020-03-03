@@ -1,6 +1,7 @@
 from random import randint
 from pathlib import Path
 import os
+import numpy
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame
@@ -28,6 +29,14 @@ class GameState:
 
         self.running = True
         self.screen_number = 0
+
+    def load_height_map(self, scaled=True):
+        im = Image.open(Path(__file__).absolute().parent.parent.joinpath('data').joinpath('ASTGTMV003_S45E168_dem.tif'))
+        imarray = numpy.array(im)
+        if scaled:
+            return (imarray//(imarray.max()/255)).astype('int32')  # // is floor division operator
+        else:
+            return imarray
 
     def find_centered_image_corner(self, image):
         screen_center = self.screen.get_rect().center
@@ -161,12 +170,14 @@ class GameState:
         float_pixel_size = (screen_size[0] / dimensions[0], screen_size[1] / dimensions[1])
         center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
         circle_radius = int(max(*float_pixel_size) * 0.35)
+        height_array =  self.load_height_map()
 
         for x in range(dimensions[0]):
             for y in range(dimensions[1]):
+                colour = height_array[self.points[0][1]+y, self.points[0][0]+x]
                 pygame.draw.circle(
                     surface,
-                    (100, 100, 100),
+                    (colour, colour, colour),
                     (int(x * float_pixel_size[0] + center_offset[0]), int(y * float_pixel_size[1] + center_offset[1])),
                     circle_radius,
                 )
