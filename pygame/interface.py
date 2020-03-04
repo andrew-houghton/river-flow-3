@@ -2,6 +2,7 @@ from random import randint
 from pathlib import Path
 import os
 import numpy
+from matplotlib import cm
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame
@@ -21,7 +22,7 @@ class GameState:
 
         # Load images
         self.true_colour = self.get_image("true_colour_resized.jpg", size)
-        self.height_map = self.get_image("ASTGTMV003_S45E168_dem.png", size)
+        self.height_map = self.get_height_map_image(size)
 
         # Set startup image
         self.screen.blit(self.true_colour, self.find_centered_image_corner(self.true_colour))
@@ -31,7 +32,7 @@ class GameState:
         self.screen_number = 0
 
     def load_height_map(self, scaled=True):
-        im = Image.open(Path(__file__).absolute().parent.parent.joinpath('data').joinpath('ASTGTMV003_S45E168_dem.tif'))
+        im = Image.open(Path(__file__).absolute().parent.parent.joinpath('data', 'ASTGTMV003_S45E168_dem.tif'))
         imarray = numpy.array(im)
         if scaled:
             return (imarray//(imarray.max()/255)).astype('int32')  # // is floor division operator
@@ -50,8 +51,14 @@ class GameState:
             self.dem_size = image.size
             new_size = [int(i * self.scale_ratio) for i in image.size]
             image = image.resize(new_size)
-        surface = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
-        return surface
+        return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
+
+    def get_height_map_image(self, size=None):
+        imarray = self.load_height_map(scaled=False)
+        image = Image.fromarray(numpy.uint8(cm.viridis(imarray/imarray.max())*255))
+        if size:
+            image = image.resize([int(i * self.scale_ratio) for i in image.size])
+        return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -107,7 +114,7 @@ class GameState:
         if self.screen_number == 3:
             # Get the section of the image
             # Scale up the section step by step
-            original_res_height_map = self.get_image("ASTGTMV003_S45E168_dem.png")
+            original_res_height_map = self.get_height_map_image()
             selected_surface = original_res_height_map.subsurface(
                 pygame.Rect(
                     self.points[0][0],
@@ -148,13 +155,14 @@ class GameState:
 
             # Remove background image
             num_steps = 30
-            resized_selected_surface = self.resized_selected_surface.copy()
+            resized_selected_surface = self.resized_selected_surface.copy().convert()
             for i in range(num_steps, 0, -1):
                 image_alpha = int(255 * i / num_steps)
+                print(f"Set alpha to {image_alpha}")
                 resized_selected_surface.set_alpha(image_alpha)
                 self.screen.fill((0, 0, 0))
-                self.screen.blit(circles_surface, (0, 0))
                 self.screen.blit(resized_selected_surface, (0, 0))
+                self.screen.blit(circles_surface, (0, 0))
                 pygame.display.flip()
                 self.clock.tick(self.framerate)
 
@@ -174,10 +182,11 @@ class GameState:
 
         for x in range(dimensions[0]):
             for y in range(dimensions[1]):
-                colour = height_array[self.points[0][1]+y, self.points[0][0]+x]
+                height = height_array[self.points[0][1]+y, self.points[0][0]+x]
+                colour = [i*255 for i in cm.viridis(height/255)[:3]]
                 pygame.draw.circle(
                     surface,
-                    (colour, colour, colour),
+                    colour,
                     (int(x * float_pixel_size[0] + center_offset[0]), int(y * float_pixel_size[1] + center_offset[1])),
                     circle_radius,
                 )
