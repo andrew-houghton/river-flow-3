@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import numpy
 from matplotlib import cm
+from line_profiler import LineProfiler
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame
@@ -83,7 +84,7 @@ class GameState:
             fading_out_image = self.true_colour.copy()
 
             corner = self.find_centered_image_corner(fading_out_image)
-            num_steps = 16
+            num_steps = 200
 
             for i in range(num_steps, 0, -1):
                 image_alpha = int(255 * i / num_steps)
@@ -125,7 +126,7 @@ class GameState:
             )
             screen_size = self.screen.get_rect().size
             map_corner = self.find_centered_image_corner(self.height_map)
-            num_steps = 15
+            num_steps = 200
             for i in range(num_steps + 1):
                 # Smoothly transition the scale of the selected surface to cover the whole screen
                 # TODO: change this section so that it looks like a flat surface moving closer to an observer
@@ -154,7 +155,7 @@ class GameState:
             self.draw_circles(self.circles_surface, self.selection_pixel_size)
 
             # Remove background image
-            num_steps = 15
+            num_steps = 200
             resized_selected_surface = self.resized_selected_surface.copy().convert()
             for i in range(num_steps, 0, -1):
                 image_alpha = int(255 * i / num_steps)
@@ -235,5 +236,8 @@ class GameState:
 
 
 if __name__ == "__main__":
+    lp = LineProfiler()
     game = GameState()
+    game.next_screen = lp(game.next_screen)
     game.main_loop()
+    lp.print_stats()
