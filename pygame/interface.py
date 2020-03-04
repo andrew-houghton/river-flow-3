@@ -173,8 +173,8 @@ class GameState:
             center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
             self.screen.fill((0, 0, 0))
             for i in range(sum(self.selection_pixel_size)):
-                # Horizontal lines
                 for j in range(i):
+                    # Horizontal lines
                     if i-j < self.selection_pixel_size[0]:
                         pygame.draw.line(
                             self.screen,
@@ -189,8 +189,7 @@ class GameState:
                             ),
                             2,
                         )
-                # Vertical lines
-                for j in range(i):
+                    # Vertical lines
                     if i-j < self.selection_pixel_size[1]:
                         pygame.draw.line(
                             self.screen,
