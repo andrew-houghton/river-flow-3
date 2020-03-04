@@ -15,8 +15,8 @@ class GameState:
         infoObject = pygame.display.Info()
         size = (infoObject.current_w, infoObject.current_h)
 
-        # self.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
-        self.screen = pygame.display.set_mode(size)
+        self.screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
+        # self.screen = pygame.display.set_mode(size)
         self.framerate = 165
         self.clock = pygame.time.Clock()
 
@@ -32,10 +32,10 @@ class GameState:
         self.screen_number = 0
 
     def load_height_map(self, scaled=True):
-        im = Image.open(Path(__file__).absolute().parent.parent.joinpath('data', 'ASTGTMV003_S45E168_dem.tif'))
+        im = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", "ASTGTMV003_S45E168_dem.tif"))
         imarray = numpy.array(im)
         if scaled:
-            return (imarray//(imarray.max()/255)).astype('int32')  # // is floor division operator
+            return (imarray // (imarray.max() / 255)).astype("int32")  # // is floor division operator
         else:
             return imarray
 
@@ -55,7 +55,7 @@ class GameState:
 
     def get_height_map_image(self, size=None):
         imarray = self.load_height_map(scaled=False)
-        image = Image.fromarray(numpy.uint8(cm.viridis(imarray/imarray.max())*255))
+        image = Image.fromarray(numpy.uint8(cm.viridis(imarray / imarray.max()) * 255))
         if size:
             image = image.resize([int(i * self.scale_ratio) for i in image.size])
         return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
@@ -125,7 +125,7 @@ class GameState:
             )
             screen_size = self.screen.get_rect().size
             map_corner = self.find_centered_image_corner(self.height_map)
-            num_steps = 200
+            num_steps = 15
             for i in range(num_steps + 1):
                 # Smoothly transition the scale of the selected surface to cover the whole screen
                 # TODO: change this section so that it looks like a flat surface moving closer to an observer
@@ -149,22 +149,64 @@ class GameState:
                 pygame.display.flip()
         if self.screen_number == 4:
             # Create circles
-            circles_surface = pygame.Surface(self.screen.get_rect().size, pygame.SRCALPHA, 32)
-            circles_surface = circles_surface.convert_alpha()
-            self.draw_circles(circles_surface, self.selection_pixel_size)
+            self.circles_surface = pygame.Surface(self.screen.get_rect().size, pygame.SRCALPHA, 32)
+            self.circles_surface = self.circles_surface.convert_alpha()
+            self.draw_circles(self.circles_surface, self.selection_pixel_size)
 
             # Remove background image
-            num_steps = 30
+            num_steps = 15
             resized_selected_surface = self.resized_selected_surface.copy().convert()
             for i in range(num_steps, 0, -1):
                 image_alpha = int(255 * i / num_steps)
-                print(f"Set alpha to {image_alpha}")
                 resized_selected_surface.set_alpha(image_alpha)
                 self.screen.fill((0, 0, 0))
                 self.screen.blit(resized_selected_surface, (0, 0))
-                self.screen.blit(circles_surface, (0, 0))
+                self.screen.blit(self.circles_surface, (0, 0))
                 pygame.display.flip()
                 self.clock.tick(self.framerate)
+        if self.screen_number == 5:
+            screen_size = self.screen.get_rect().size
+            float_pixel_size = (
+                screen_size[0] / self.selection_pixel_size[0],
+                screen_size[1] / self.selection_pixel_size[1],
+            )
+            center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
+            self.screen.fill((0, 0, 0))
+            for i in range(sum(self.selection_pixel_size)):
+                # Horizontal lines
+                for j in range(i):
+                    if i-j < self.selection_pixel_size[0]:
+                        pygame.draw.line(
+                            self.screen,
+                            (255, 255, 255),
+                            (
+                                int((i-j-1) * float_pixel_size[0] + center_offset[0]),
+                                int(j * float_pixel_size[1] + center_offset[1]),
+                            ),
+                            (
+                                int((i-j) * float_pixel_size[0] + center_offset[0]),
+                                int(j * float_pixel_size[1] + center_offset[1]),
+                            ),
+                            2,
+                        )
+                # Vertical lines
+                for j in range(i):
+                    if i-j < self.selection_pixel_size[1]:
+                        pygame.draw.line(
+                            self.screen,
+                            (255, 255, 255),
+                            (
+                                int(j * float_pixel_size[0] + center_offset[0]),
+                                int((i-j-1) * float_pixel_size[1] + center_offset[1]),
+                            ),
+                            (
+                                int(j * float_pixel_size[0] + center_offset[0]),
+                                int((i-j) * float_pixel_size[1] + center_offset[1]),
+                            ),
+                            2,
+                        )
+                self.screen.blit(self.circles_surface, (0, 0))
+                pygame.display.flip()
 
     def compute_selection_pixel_size(self, max_pixels=100):
         # Wide dimension of the screen is max_pixels
@@ -178,12 +220,12 @@ class GameState:
         float_pixel_size = (screen_size[0] / dimensions[0], screen_size[1] / dimensions[1])
         center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
         circle_radius = int(max(*float_pixel_size) * 0.35)
-        height_array =  self.load_height_map()
+        height_array = self.load_height_map()
 
         for x in range(dimensions[0]):
             for y in range(dimensions[1]):
-                height = height_array[self.points[0][1]+y, self.points[0][0]+x]
-                colour = [i*255 for i in cm.viridis(height/255)[:3]]
+                height = height_array[self.points[0][1] + y, self.points[0][0] + x]
+                colour = [i * 255 for i in cm.viridis(height / 255)[:3]]
                 pygame.draw.circle(
                     surface,
                     colour,
