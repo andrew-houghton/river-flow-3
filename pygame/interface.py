@@ -207,6 +207,7 @@ class GameState:
                         )
                 self.screen.blit(self.circles_surface, (0, 0))
                 pygame.display.flip()
+                self.clock.tick(self.framerate)
 
     def compute_selection_pixel_size(self, max_pixels=100):
         # Wide dimension of the screen is max_pixels
