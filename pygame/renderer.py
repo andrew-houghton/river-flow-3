@@ -1,32 +1,35 @@
+import os
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame
-from .vis_dataclasses import VisState, VisSettings
-from itertools import chain
-from .animations import StartingImage, TrueColourToHeightMap
+from vis_dataclasses import VisState, VisSettings
+from animations import starting_image, true_colour_to_height_map
 
 
 class VisRenderer:
     def __init__(self):
         pygame.init()
-        self.settings = VisSettings(screen_size=pygame.display.Info())
+        infoObject = pygame.display.Info()
+        self.settings = VisSettings(screen_size=(infoObject.current_w//2, infoObject.current_h//2))
         self.state = VisState(running=True, within_transition=True)
 
-        self.screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
+        # screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
+        screen = pygame.display.set_mode(self.settings.screen_size)
         self.clock = pygame.time.Clock()
 
         self.animations = [
-            StartingImage(screen, self.state, self.settings),
-            TrueColourToHeightMap(screen, self.state, self.settings),
+            starting_image(screen, self.state, self.settings),
+            true_colour_to_height_map(screen, self.state, self.settings),
         ]
         self.main_loop()
 
     def main_loop(self):
-        frame_generator = next_animation()
+        frame_generator = self.next_animation()
         while self.state.running:
             if self.state.within_transition:
                 try:
-                    frame_generator.next()
+                    next(frame_generator)
                     pygame.display.flip()
-                    self.clock.tick(self.framerate)
+                    self.clock.tick(self.settings.framerate)
                     self.handle_events()
                 except StopIteration:
                     self.state.within_transition = False
@@ -46,7 +49,7 @@ class VisRenderer:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 self.state.running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT and not self.state.within_transition:
-                return self.next_animation(self.screen)
+                return self.next_animation()
 
 
 if __name__ == "__main__":
