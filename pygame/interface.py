@@ -236,8 +236,5 @@ class GameState:
 
 
 if __name__ == "__main__":
-    lp = LineProfiler()
     game = GameState()
-    game.next_screen = lp(game.next_screen)
     game.main_loop()
-    lp.print_stats()
