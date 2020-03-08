@@ -2,7 +2,7 @@ import os
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame
 from vis_dataclasses import VisState, VisSettings
-from animations import starting_image, true_colour_to_height_map
+from animations import starting_image, true_colour_to_height_map, display_selection_polygon
 
 
 class VisRenderer:
@@ -19,6 +19,7 @@ class VisRenderer:
         self.animations = [
             starting_image(screen, self.state, self.settings),
             true_colour_to_height_map(screen, self.state, self.settings),
+            display_selection_polygon(screen, self.state, self.settings),
         ]
         self.main_loop()
 
