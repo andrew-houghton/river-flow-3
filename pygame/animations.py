@@ -35,9 +35,11 @@ def display_selection_polygon(screen, state: VisState, settings: VisSettings) ->
     # TODO: Only show polygon within screen
 
     state.selection_pixel_size = compute_selection_pixel_size(settings.screen_size, settings.max_pixels)
-    left = randint(0, settings.height_map.shape[0] - 1 - state.selection_pixel_size[0])
+
+    shown_screen_dimensions = [int(i/settings.scale_ratio) for i in settings.screen_size]
+    left = randint(0, shown_screen_dimensions[0] - 1 - state.selection_pixel_size[0])
     right = left + state.selection_pixel_size[0]
-    top = randint(0, settings.height_map.shape[1] - 1 - state.selection_pixel_size[1])
+    top = randint(0, shown_screen_dimensions[1] - 1 - state.selection_pixel_size[1])
     bottom = top + state.selection_pixel_size[1]
 
     state.points = ((left, top), (right, top), (right, bottom), (left, bottom))
