@@ -41,6 +41,7 @@ class VisSettings:
             screen_dimension / original_dimension
             for screen_dimension, original_dimension in zip(self.screen_size, self.height_map.shape)
         )
+        self.full_size_height_image = height_map_to_image(self.height_map)
         self.screen_size_height_image = crop(height_map_to_image(self.height_map), self.scale_ratio)
         self.screen_size_true_colour = crop(load_true_colour(), self.scale_ratio)
         self.framerate = framerate

@@ -36,7 +36,7 @@ def display_selection_polygon(screen, state: VisState, settings: VisSettings) ->
 
     state.selection_pixel_size = compute_selection_pixel_size(settings.screen_size, settings.max_pixels)
 
-    shown_screen_dimensions = [int(i/settings.scale_ratio) for i in settings.screen_size]
+    shown_screen_dimensions = [int(i / settings.scale_ratio) for i in settings.screen_size]
     left = randint(0, shown_screen_dimensions[0] - 1 - state.selection_pixel_size[0])
     right = left + state.selection_pixel_size[0]
     top = randint(0, shown_screen_dimensions[1] - 1 - state.selection_pixel_size[1])
@@ -45,6 +45,51 @@ def display_selection_polygon(screen, state: VisState, settings: VisSettings) ->
     state.points = ((left, top), (right, top), (right, bottom), (left, bottom))
     state.scaled_points = [(int(x * settings.scale_ratio), int(y * settings.scale_ratio)) for x, y in state.points]
     print("added polygon")
-    pygame.draw.polygon(settings.screen_size_height_image, settings.selection_line_colour, state.scaled_points, settings.selection_line_width)
+    pygame.draw.polygon(
+        settings.screen_size_height_image,
+        settings.selection_line_colour,
+        state.scaled_points,
+        settings.selection_line_width,
+    )
     screen.blit(settings.screen_size_height_image, (0, 0))
     yield
+
+
+def scale_up_selection(screen, state: VisState, settings: VisSettings) -> Generator:
+    # Get the section of the image
+    # Scale up the section step by step
+    selected_surface = settings.full_size_height_image.subsurface(
+        pygame.Rect(
+            state.points[0][0],
+            state.points[0][1],
+            state.points[2][0] - state.points[0][0],
+            state.points[2][1] - state.points[0][1],
+        )
+    )
+
+    # Todo
+    # map_corner = self.find_centered_image_corner(settings.height_map)
+    map_corner = (0, 0)
+    num_steps = 200
+
+    for i in range(num_steps + 1):
+        # Smoothly transition the scale of the selected surface to cover the whole screen
+        # TODO: change this section so that it looks like a flat surface moving closer to an observer
+        proportion_finished = (i / num_steps) ** 4
+        proportion_unfinished = 1 - proportion_finished
+
+        width = (
+            state.selection_pixel_size[0] * settings.scale_ratio * proportion_unfinished
+            + settings.screen_size[0] * proportion_finished
+        )
+        height = (
+            state.selection_pixel_size[1] * settings.scale_ratio * proportion_unfinished
+            + settings.screen_size[1] * proportion_finished
+        )
+
+        left = int((map_corner[0] + state.scaled_points[0][0]) * proportion_unfinished)
+        top = int((map_corner[1] + state.scaled_points[0][1]) * proportion_unfinished)
+
+        state.resized_selected_surface = pygame.transform.scale(selected_surface, (int(width), int(height)))
+        screen.blit(state.resized_selected_surface, (left, top))
+        yield
