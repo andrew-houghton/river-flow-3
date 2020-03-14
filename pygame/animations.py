@@ -44,7 +44,6 @@ def display_selection_polygon(screen, state: VisState, settings: VisSettings) ->
 
     state.points = ((left, top), (right, top), (right, bottom), (left, bottom))
     state.scaled_points = [(int(x * settings.scale_ratio), int(y * settings.scale_ratio)) for x, y in state.points]
-    print("added polygon")
     pygame.draw.polygon(
         settings.screen_size_height_image,
         settings.selection_line_colour,
@@ -67,29 +66,26 @@ def scale_up_selection(screen, state: VisState, settings: VisSettings) -> Genera
         )
     )
 
-    # Todo
-    # map_corner = self.find_centered_image_corner(settings.height_map)
-    map_corner = (0, 0)
     num_steps = 200
 
     for i in range(num_steps + 1):
         # Smoothly transition the scale of the selected surface to cover the whole screen
         # TODO: change this section so that it looks like a flat surface moving closer to an observer
-        proportion_finished = (i / num_steps) ** 4
+        proportion_finished = (i / num_steps) ** 3
         proportion_unfinished = 1 - proportion_finished
 
-        width = (
+        width = int(
             state.selection_pixel_size[0] * settings.scale_ratio * proportion_unfinished
             + settings.screen_size[0] * proportion_finished
         )
-        height = (
+        height = int(
             state.selection_pixel_size[1] * settings.scale_ratio * proportion_unfinished
             + settings.screen_size[1] * proportion_finished
         )
 
-        left = int((map_corner[0] + state.scaled_points[0][0]) * proportion_unfinished)
-        top = int((map_corner[1] + state.scaled_points[0][1]) * proportion_unfinished)
+        left = int(state.scaled_points[0][0] * proportion_unfinished)
+        top = int(state.scaled_points[0][1] * proportion_unfinished)
 
-        state.resized_selected_surface = pygame.transform.scale(selected_surface, (int(width), int(height)))
+        state.resized_selected_surface = pygame.transform.scale(selected_surface, (width, height))
         screen.blit(state.resized_selected_surface, (left, top))
         yield
