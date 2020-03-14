@@ -1,15 +1,22 @@
 import os
+
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame
 from vis_dataclasses import VisState, VisSettings
-from animations import starting_image, true_colour_to_height_map, display_selection_polygon, scale_up_selection
+from animations import (
+    starting_image,
+    true_colour_to_height_map,
+    display_selection_polygon,
+    scale_up_selection,
+    add_circles,
+)
 
 
 class VisRenderer:
     def __init__(self):
         pygame.init()
         infoObject = pygame.display.Info()
-        self.settings = VisSettings(screen_size=(infoObject.current_w//2, infoObject.current_h//2))
+        self.settings = VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
         self.state = VisState(running=True, within_transition=True)
 
         # screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
@@ -21,6 +28,7 @@ class VisRenderer:
             true_colour_to_height_map(screen, self.state, self.settings),
             display_selection_polygon(screen, self.state, self.settings),
             scale_up_selection(screen, self.state, self.settings),
+            add_circles(screen, self.state, self.settings),
         ]
         self.main_loop()
 
