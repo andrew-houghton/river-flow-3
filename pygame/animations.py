@@ -125,3 +125,46 @@ def add_circles(screen, state: VisState, settings: VisSettings) -> Generator:
         screen.blit(state.resized_selected_surface, (0, 0))
         screen.blit(state.circles_surface, (0, 0))
         yield
+
+def add_edges(screen, state: VisState, settings: VisSettings) -> Generator:
+
+    float_pixel_size = (
+        settings.screen_size[0] / state.selection_pixel_size[0],
+        settings.screen_size[1] / state.selection_pixel_size[1],
+    )
+    center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
+    screen.fill((0, 0, 0))
+    for i in range(sum(state.selection_pixel_size)):
+        for j in range(i):
+            # Horizontal lines
+            if i-j < state.selection_pixel_size[0]:
+                pygame.draw.line(
+                    screen,
+                    (255, 255, 255),
+                    (
+                        int((i-j-1) * float_pixel_size[0] + center_offset[0]),
+                        int(j * float_pixel_size[1] + center_offset[1]),
+                    ),
+                    (
+                        int((i-j) * float_pixel_size[0] + center_offset[0]),
+                        int(j * float_pixel_size[1] + center_offset[1]),
+                    ),
+                    2,
+                )
+            # Vertical lines
+            if i-j < state.selection_pixel_size[1]:
+                pygame.draw.line(
+                    screen,
+                    (255, 255, 255),
+                    (
+                        int(j * float_pixel_size[0] + center_offset[0]),
+                        int((i-j-1) * float_pixel_size[1] + center_offset[1]),
+                    ),
+                    (
+                        int(j * float_pixel_size[0] + center_offset[0]),
+                        int((i-j) * float_pixel_size[1] + center_offset[1]),
+                    ),
+                    2,
+                )
+        screen.blit(state.circles_surface, (0, 0))
+        yield

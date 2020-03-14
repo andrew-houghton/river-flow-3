@@ -9,6 +9,7 @@ from animations import (
     display_selection_polygon,
     scale_up_selection,
     add_circles,
+    add_edges,
 )
 
 
@@ -29,6 +30,7 @@ class VisRenderer:
             display_selection_polygon(screen, self.state, self.settings),
             scale_up_selection(screen, self.state, self.settings),
             add_circles(screen, self.state, self.settings),
+            add_edges(screen, self.state, self.settings),
         ]
         self.main_loop()
 
