@@ -10,6 +10,7 @@ from animations import (
     scale_up_selection,
     add_circles,
     add_edges,
+    merge_equal_height_nodes,
 )
 
 
@@ -18,6 +19,7 @@ class VisRenderer:
         pygame.init()
         infoObject = pygame.display.Info()
         self.settings = VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
+        # self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
         self.state = VisState(running=True, within_transition=True)
 
         # screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
@@ -31,6 +33,7 @@ class VisRenderer:
             scale_up_selection(screen, self.state, self.settings),
             add_circles(screen, self.state, self.settings),
             add_edges(screen, self.state, self.settings),
+            merge_equal_height_nodes(screen, self.state, self.settings),
         ]
         self.main_loop()
 

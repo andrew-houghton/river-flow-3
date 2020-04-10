@@ -3,6 +3,7 @@ from typing import Generator
 from random import randint
 import pygame
 from matplotlib import cm
+from pprint import pprint
 
 
 def starting_image(screen, state: VisState, settings: VisSettings) -> Generator:
@@ -92,18 +93,17 @@ def scale_up_selection(screen, state: VisState, settings: VisSettings) -> Genera
         yield
 
 
+def _draw_circles(screen_size, height_array, surface, dimensions, points, skipped_coordinates=None):
+    skipped_coordinates = skipped_coordinates or []
+    float_pixel_size = (screen_size[0] / dimensions[0], screen_size[1] / dimensions[1])
+    center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
+    circle_radius = int(max(*float_pixel_size) * 0.35)
+    height_array = (height_array // (height_array.max() / 255)).astype("int32")
 
-def add_circles(screen, state: VisState, settings: VisSettings) -> Generator:
-
-    def draw_circles(screen_size, height_array, surface, dimensions):
-        float_pixel_size = (screen_size[0] / dimensions[0], screen_size[1] / dimensions[1])
-        center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
-        circle_radius = int(max(*float_pixel_size) * 0.35)
-        height_array = (height_array // (height_array.max() / 255)).astype("int32")
-
-        for x in range(dimensions[0]):
-            for y in range(dimensions[1]):
-                height = height_array[state.points[0][1] + y, state.points[0][0] + x]
+    for x in range(dimensions[0]):
+        for y in range(dimensions[1]):
+            if (x, y) not in skipped_coordinates:
+                height = height_array[points[0][1] + y, points[0][0] + x]
                 colour = [i * 255 for i in cm.viridis(height / 255)[:3]]
                 pygame.draw.circle(
                     surface,
@@ -112,8 +112,13 @@ def add_circles(screen, state: VisState, settings: VisSettings) -> Generator:
                     circle_radius,
                 )
 
+
+def add_circles(screen, state: VisState, settings: VisSettings) -> Generator:
+
     state.circles_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
-    draw_circles(settings.screen_size, settings.height_map, state.circles_surface, state.selection_pixel_size)
+    _draw_circles(
+        settings.screen_size, settings.height_map, state.circles_surface, state.selection_pixel_size, state.points
+    )
 
     # Remove background image
     num_steps = 200
@@ -126,6 +131,7 @@ def add_circles(screen, state: VisState, settings: VisSettings) -> Generator:
         screen.blit(state.circles_surface, (0, 0))
         yield
 
+
 def add_edges(screen, state: VisState, settings: VisSettings) -> Generator:
 
     float_pixel_size = (
@@ -137,34 +143,138 @@ def add_edges(screen, state: VisState, settings: VisSettings) -> Generator:
     for i in range(sum(state.selection_pixel_size)):
         for j in range(i):
             # Horizontal lines
-            if i-j < state.selection_pixel_size[0]:
+            if i - j < state.selection_pixel_size[0]:
                 pygame.draw.line(
                     screen,
                     (255, 255, 255),
                     (
-                        int((i-j-1) * float_pixel_size[0] + center_offset[0]),
+                        int((i - j - 1) * float_pixel_size[0] + center_offset[0]),
                         int(j * float_pixel_size[1] + center_offset[1]),
                     ),
                     (
-                        int((i-j) * float_pixel_size[0] + center_offset[0]),
+                        int((i - j) * float_pixel_size[0] + center_offset[0]),
                         int(j * float_pixel_size[1] + center_offset[1]),
                     ),
                     2,
                 )
             # Vertical lines
-            if i-j < state.selection_pixel_size[1]:
+            if i - j < state.selection_pixel_size[1]:
                 pygame.draw.line(
                     screen,
                     (255, 255, 255),
                     (
                         int(j * float_pixel_size[0] + center_offset[0]),
-                        int((i-j-1) * float_pixel_size[1] + center_offset[1]),
+                        int((i - j - 1) * float_pixel_size[1] + center_offset[1]),
                     ),
                     (
                         int(j * float_pixel_size[0] + center_offset[0]),
-                        int((i-j) * float_pixel_size[1] + center_offset[1]),
+                        int((i - j) * float_pixel_size[1] + center_offset[1]),
                     ),
                     2,
                 )
         screen.blit(state.circles_surface, (0, 0))
+        yield
+
+
+def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> Generator:
+    # 1. Loop through all pixels
+    # 2. DFS to any adjancent nodes of equal height
+    # 3. Store co-ordinates of points to be merged
+
+    def get_adjacent_equal_height_nodes(x, y, height):
+        nodes = set()
+        if x > 0 and height == settings.height_map[state.points[0][1] + y, state.points[0][0] + x - 1]:
+            nodes.add((x - 1, y))
+        if (
+            x < state.selection_pixel_size[0] - 1
+            and height == settings.height_map[state.points[0][1] + y, state.points[0][0] + x + 1]
+        ):
+            nodes.add((x + 1, y))
+        if y > 0 and height == settings.height_map[state.points[0][1] + y - 1, state.points[0][0] + x]:
+            nodes.add((x - 1, y))
+        if (
+            y < state.selection_pixel_size[1] - 1
+            and height == settings.height_map[state.points[0][1] + y + 1, state.points[0][0] + x]
+        ):
+            nodes.add((x + 1, y))
+        return nodes
+
+    node_merge_operations = []
+    skip_nodes = set()
+
+    from tqdm import tqdm
+
+    for x in tqdm(range(state.selection_pixel_size[0])):
+        for y in range(state.selection_pixel_size[1]):
+            if (x, y) not in skip_nodes:
+                height = settings.height_map[state.points[0][1] + y, state.points[0][0] + x]
+
+                visited, queue = set(), [(x, y)]
+                while queue:
+                    vertex = queue.pop(0)
+                    if vertex not in visited:
+                        visited.add(vertex)
+                        queue.extend(get_adjacent_equal_height_nodes(*vertex, height) - visited)
+
+                if visited != {(x, y)}:
+                    node_merge_operations.append(visited)
+                    for node in visited:
+                        skip_nodes.add(node)
+
+    print(f"{len(node_merge_operations)} merge operations to perform")
+
+    # create a surface with the circles which don't move
+    # for every point which moved calculate it's start and end position
+    # then render frames 1 by one by redrawing all the circles which move, and the connections to those points
+
+    state.circles_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
+    _draw_circles(
+        settings.screen_size,
+        settings.height_map,
+        state.circles_surface,
+        state.selection_pixel_size,
+        state.points,
+        skip_nodes,
+    )
+
+    node_movements = {}
+    for merging_nodes in node_merge_operations:
+        new_location = (
+            sum(x for x, y in merging_nodes) / len(merging_nodes),
+            sum(y for x, y in merging_nodes) / len(merging_nodes),
+        )
+        for node in merging_nodes:
+            if node in node_movements:
+                print("Error, node written twice")
+            node_movements[node] = new_location
+
+    num_steps = 20
+    float_pixel_size = (
+        settings.screen_size[0] / state.selection_pixel_size[0],
+        settings.screen_size[1] / state.selection_pixel_size[1],
+    )
+    circle_radius = int(max(*float_pixel_size) * 0.35)
+    center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
+
+    for i in tqdm(range(1, num_steps + 1)):
+        screen.fill((0, 0, 0))
+        screen.blit(state.circles_surface, (0, 0))
+        moving_circles_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
+        for node, new_position in node_movements.items():
+            height = settings.height_map[state.points[0][1] + y, state.points[0][0] + x]
+            colour = [i * 255 for i in cm.viridis(height / 255)[:3]]
+
+            current_x = node[0] + i / num_steps * (new_position[0] - node[0])
+            current_y = node[1] + i / num_steps * (new_position[1] - node[1])
+
+            pygame.draw.circle(
+                moving_circles_surface,
+                colour,
+                (
+                    int(current_x * float_pixel_size[0] + center_offset[0]),
+                    int(current_y * float_pixel_size[1] + center_offset[1]),
+                ),
+                circle_radius,
+            )
+        screen.blit(moving_circles_surface, (0, 0))
         yield
