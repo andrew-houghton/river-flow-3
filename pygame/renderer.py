@@ -57,7 +57,7 @@ class VisRenderer:
         try:
             return self.animations.pop(0)
         except IndexError:
-            return
+            self.state.running = False
 
     def handle_events(self):
         for event in pygame.event.get():

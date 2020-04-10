@@ -12,7 +12,7 @@ def starting_image(screen, state: VisState, settings: VisSettings) -> Generator:
 
 
 def true_colour_to_height_map(screen, state: VisState, settings: VisSettings) -> Generator:
-    num_steps = 50
+    num_steps = 10
     fading_out_image = settings.screen_size_true_colour.copy()
 
     for i in range(num_steps, 0, -1):
@@ -68,7 +68,7 @@ def scale_up_selection(screen, state: VisState, settings: VisSettings) -> Genera
         )
     )
 
-    num_steps = 200
+    num_steps = 10
 
     for i in range(num_steps + 1):
         # Smoothly transition the scale of the selected surface to cover the whole screen
@@ -121,7 +121,7 @@ def add_circles(screen, state: VisState, settings: VisSettings) -> Generator:
     )
 
     # Remove background image
-    num_steps = 200
+    num_steps = 10
     state.resized_selected_surface = state.resized_selected_surface.convert()
     for i in range(num_steps, -1, -1):
         image_alpha = int(255 * i / num_steps)
@@ -181,6 +181,10 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
     # 2. DFS to any adjancent nodes of equal height
     # 3. Store co-ordinates of points to be merged
 
+    # create a surface with the circles which don't move
+    # for every point which moved calculate it's start and end position
+    # then render frames 1 by one by redrawing all the circles which move, and the connections to those points
+
     def get_adjacent_equal_height_nodes(x, y, height):
         nodes = set()
         if x > 0 and height == settings.height_map[state.points[0][1] + y, state.points[0][0] + x - 1]:
@@ -202,9 +206,7 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
     node_merge_operations = []
     skip_nodes = set()
 
-    from tqdm import tqdm
-
-    for x in tqdm(range(state.selection_pixel_size[0])):
+    for x in range(state.selection_pixel_size[0]):
         for y in range(state.selection_pixel_size[1]):
             if (x, y) not in skip_nodes:
                 height = settings.height_map[state.points[0][1] + y, state.points[0][0] + x]
@@ -221,13 +223,43 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
                     for node in visited:
                         skip_nodes.add(node)
 
-    print(f"{len(node_merge_operations)} merge operations to perform")
-
-    # create a surface with the circles which don't move
-    # for every point which moved calculate it's start and end position
-    # then render frames 1 by one by redrawing all the circles which move, and the connections to those points
-
     state.circles_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
+
+    float_pixel_size = (
+        settings.screen_size[0] / state.selection_pixel_size[0],
+        settings.screen_size[1] / state.selection_pixel_size[1],
+    )
+    center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
+    # Draw all the lines between nodes which are not changing
+    def draw_line(surface, from_node, to_node):
+        pygame.draw.line(
+            surface,
+            (255, 255, 255),
+            (
+                int(from_node[0] * float_pixel_size[0] + center_offset[0]),
+                int(from_node[1] * float_pixel_size[1] + center_offset[1]),
+            ),
+            (
+                int(to_node[0] * float_pixel_size[0] + center_offset[0]),
+                int(to_node[1] * float_pixel_size[1] + center_offset[1]),
+            ),
+            2,
+        )
+
+    non_skip_nodes = [
+        (x, y)
+        for x in range(state.selection_pixel_size[0])
+        for y in range(state.selection_pixel_size[1])
+        if (x, y) not in skip_nodes
+    ]
+    for from_node in non_skip_nodes:
+        for to_node in non_skip_nodes:
+            if from_node > to_node:
+                if (abs(from_node[0] - to_node[0]) == 1 and from_node[1] == to_node[1]) or (
+                    abs(from_node[1] - to_node[1]) == 1 and from_node[0] == to_node[0]
+                ):
+                    draw_line(state.circles_surface, from_node, to_node)
+
     _draw_circles(
         settings.screen_size,
         settings.height_map,
@@ -246,25 +278,50 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
         for node in merging_nodes:
             node_movements[node] = new_location
 
-    num_steps = 80
-    float_pixel_size = (
-        settings.screen_size[0] / state.selection_pixel_size[0],
-        settings.screen_size[1] / state.selection_pixel_size[1],
-    )
+    num_steps = 50
     circle_radius = int(max(*float_pixel_size) * 0.35)
-    center_offset = (float_pixel_size[0] / 2, float_pixel_size[1] / 2)
     height_array = (settings.height_map // (settings.height_map.max() / 255)).astype("int32")
 
-    for i in tqdm(range(1, num_steps + 1)):
+    def get_adjacent_nodes(x, y):
+        nodes = set()
+        if x > 0:
+            nodes.add((x - 1, y))
+        if x < state.selection_pixel_size[0] - 1:
+            nodes.add((x + 1, y))
+        if y > 0:
+            nodes.add((x, y - 1))
+        if y < state.selection_pixel_size[1] - 1:
+            nodes.add((x, y + 1))
+        return nodes
+
+    def get_updated_node_position(node, new_position, progress):
+        x = node[0] + i / num_steps * (new_position[0] - node[0])
+        y = node[1] + i / num_steps * (new_position[1] - node[1])
+        return x, y
+
+    for i in range(1, num_steps + 1):
         screen.fill((0, 0, 0))
-        screen.blit(state.circles_surface, (0, 0))
         moving_circles_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
+
         for node, new_position in node_movements.items():
-            current_x = node[0] + i / num_steps * (new_position[0] - node[0])
-            current_y = node[1] + i / num_steps * (new_position[1] - node[1])
+            adjacent_nodes = [j for j in get_adjacent_nodes(*node) if j not in skip_nodes or j < node]
+            for adjacent_node in adjacent_nodes:
+                if adjacent_node in skip_nodes:
+                    adjacent_node_position = get_updated_node_position(
+                        adjacent_node, node_movements[adjacent_node], i / num_steps
+                    )
+                else:
+                    adjacent_node_position = adjacent_node
+                draw_line(
+                    moving_circles_surface,
+                    get_updated_node_position(node, new_position, i / num_steps),
+                    adjacent_node_position,
+                )
+
+        for node, new_position in node_movements.items():
+            current_x, current_y = get_updated_node_position(node, new_position, i / num_steps)
             height = height_array[state.points[0][1] + node[1], state.points[0][0] + node[0]]
             colour = [i * 255 for i in cm.viridis(height / 255)[:3]]
-
             pygame.draw.circle(
                 moving_circles_surface,
                 colour,
@@ -275,4 +332,5 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
                 circle_radius,
             )
         screen.blit(moving_circles_surface, (0, 0))
+        screen.blit(state.circles_surface, (0, 0))
         yield
