@@ -117,8 +117,8 @@ def add_circles(screen, state: VisState, settings: VisSettings) -> Generator:
 
     # Remove background image
     num_steps = 200
-    state.resized_selected_surface.convert()
-    for i in range(num_steps, 0, -1):
+    state.resized_selected_surface = state.resized_selected_surface.convert()
+    for i in range(num_steps, -1, -1):
         image_alpha = int(255 * i / num_steps)
         state.resized_selected_surface.set_alpha(image_alpha)
         screen.fill((0, 0, 0))
