@@ -9,7 +9,8 @@ def check_nodes_equal_height(node_a, node_b, state, settings):
 
 
 def equal_height_node_merge(state, settings):
-    from animations import get_adjacent_nodes
+    from animations import _get_adjacent_nodes
+
     node_merge_operations = []
     skip_nodes = set()
     node_check_func = partial(check_nodes_equal_height, state=state, settings=settings)
@@ -23,7 +24,7 @@ def equal_height_node_merge(state, settings):
                     vertex = queue.pop(0)
                     if vertex not in visited:
                         visited.add(vertex)
-                        queue.extend(set(get_adjacent_nodes(vertex, state, node_check_func)) - visited - skip_nodes)
+                        queue.extend(set(_get_adjacent_nodes(vertex, state, node_check_func)) - visited - skip_nodes)
 
                 if visited != {(x, y)}:
                     node_merge_operations.append(visited)

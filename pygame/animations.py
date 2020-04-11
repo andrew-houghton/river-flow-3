@@ -27,7 +27,7 @@ def true_colour_to_height_map(screen, state: VisState, settings: VisSettings) ->
     yield
 
 
-def compute_selection_pixel_size(screen_size, max_pixels):
+def _compute_selection_pixel_size(screen_size, max_pixels):
     # Wide dimension of the screen is max_pixels
     # Other dimension of the screen is the same scale
     pixel_size = max(screen_size) / max_pixels
@@ -35,7 +35,7 @@ def compute_selection_pixel_size(screen_size, max_pixels):
 
 
 def display_selection_polygon(screen, state: VisState, settings: VisSettings) -> Generator:
-    state.selection_pixel_size = compute_selection_pixel_size(settings.screen_size, settings.max_pixels)
+    state.selection_pixel_size = _compute_selection_pixel_size(settings.screen_size, settings.max_pixels)
     state.float_pixel_size = (
         settings.screen_size[0] / state.selection_pixel_size[0],
         settings.screen_size[1] / state.selection_pixel_size[1],
@@ -134,7 +134,7 @@ def add_circles(screen, state: VisState, settings: VisSettings) -> Generator:
         yield
 
 
-def get_adjacent_nodes(node, state, filter_function=lambda *args: True):
+def _get_adjacent_nodes(node, state, filter_function=lambda *args: True):
     x, y = node
     nodes = set()
     if x > 0:
@@ -149,7 +149,7 @@ def get_adjacent_nodes(node, state, filter_function=lambda *args: True):
 
 
 # TODO Reuse this function above
-def draw_line(surface, from_node, to_node, state):
+def _draw_line(surface, from_node, to_node, state):
     pygame.draw.line(
         surface,
         (255, 255, 255),
@@ -169,10 +169,10 @@ def add_edges(screen, state: VisState, settings: VisSettings) -> Generator:
     screen.fill((0, 0, 0))
     for x in range(state.selection_pixel_size[0]):
         for y in range(state.selection_pixel_size[1]):
-            if x>0:
-                draw_line(screen, (x,y), (x-1,y), state)
-            if y>0:
-                draw_line(screen, (x,y), (x,y-1), state)
+            if x > 0:
+                _draw_line(screen, (x, y), (x - 1, y), state)
+            if y > 0:
+                _draw_line(screen, (x, y), (x, y - 1), state)
         screen.blit(state.circles_surface, (0, 0))
         yield
 
@@ -202,7 +202,7 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
                 if (abs(from_node[0] - to_node[0]) == 1 and from_node[1] == to_node[1]) or (
                     abs(from_node[1] - to_node[1]) == 1 and from_node[0] == to_node[0]
                 ):
-                    draw_line(state.circles_surface, from_node, to_node, state)
+                    _draw_line(state.circles_surface, from_node, to_node, state)
 
     _draw_circles(state.circles_surface, state, settings, skip_nodes)
 
@@ -220,7 +220,7 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
         moving_circles_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
 
         for node, new_position in node_movements.items():
-            adjacent_nodes = get_adjacent_nodes(node, state, lambda x, y: x < y or x in skip_nodes)
+            adjacent_nodes = _get_adjacent_nodes(node, state, lambda x, y: x < y or x in skip_nodes)
             for adjacent_node in adjacent_nodes:
                 if adjacent_node in skip_nodes:
                     adjacent_node_position = get_updated_node_position(
@@ -228,7 +228,7 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
                     )
                 else:
                     adjacent_node_position = adjacent_node
-                draw_line(
+                _draw_line(
                     moving_circles_surface,
                     get_updated_node_position(node, new_position, i / num_steps),
                     adjacent_node_position,
@@ -252,3 +252,7 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
         screen.blit(moving_circles_surface, (0, 0))
         screen.blit(state.circles_surface, (0, 0))
         yield
+
+
+def flooding(screen, state: VisState, settings: VisSettings) -> Generator:
+    pass
