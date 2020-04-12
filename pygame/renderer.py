@@ -69,6 +69,10 @@ class VisRenderer:
                 self.state.running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT and not self.state.within_transition:
                 return self.next_animation()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                self.state.click_location_1 = pygame.mouse.get_pos()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                self.state.click_location_2 = pygame.mouse.get_pos()
 
 
 if __name__ == "__main__":

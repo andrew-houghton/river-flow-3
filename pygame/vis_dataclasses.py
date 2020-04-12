@@ -55,3 +55,5 @@ class VisState:
     running: bool = True
     within_transition: bool = True
     selection_pixel_size: Tuple[int, int] = None
+    click_location_1: Tuple[int, int] = None
+    click_location_2: Tuple[int, int] = None

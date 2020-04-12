@@ -36,30 +36,63 @@ def _compute_selection_pixel_size(screen_size, max_pixels):
 
 
 def display_selection_polygon(screen, state: VisState, settings: VisSettings) -> Generator:
-    state.selection_pixel_size = _compute_selection_pixel_size(settings.screen_size, settings.max_pixels)
+    shown_screen_dimensions = [int(i / settings.scale_ratio) for i in settings.screen_size]
+
+    if state.click_location_1 and state.click_location_2:
+        scaled_location_1 = (
+            int(state.click_location_1[0] / settings.scale_ratio),
+            int(state.click_location_1[1] / settings.scale_ratio),
+        )
+        scaled_location_2 = (
+            int(state.click_location_2[0] / settings.scale_ratio),
+            int(state.click_location_2[1] / settings.scale_ratio),
+        )
+
+        left = min(scaled_location_1[0], scaled_location_2[0])
+        right = max(scaled_location_1[0], scaled_location_2[0])
+        top = min(scaled_location_1[1], scaled_location_2[1])
+        bottom = max(scaled_location_1[1], scaled_location_2[1])
+
+        screen_fill_ratio_x = (right - left) / shown_screen_dimensions[0]
+        screen_fill_ratio_y = (bottom - top) / shown_screen_dimensions[1]
+        screen_fill_ratio = min(screen_fill_ratio_x, screen_fill_ratio_y)
+        if screen_fill_ratio_x < screen_fill_ratio_y:
+            bottom = top + screen_fill_ratio_x * shown_screen_dimensions[1]
+        else:
+            right = left + screen_fill_ratio_y * shown_screen_dimensions[0]
+
+        state.selection_pixel_size = _compute_selection_pixel_size(
+            settings.screen_size, max(right - left, bottom - top)
+        )
+        state.points = ((left, top), (right, top), (right, bottom), (left, bottom))
+        state.selected_area_height_map = settings.height_map[
+            state.points[0][1] : state.points[0][1] + state.selection_pixel_size[1],
+            state.points[0][0] : state.points[0][0] + state.selection_pixel_size[0],
+        ]
+    else:
+        state.selection_pixel_size = _compute_selection_pixel_size(settings.screen_size, settings.max_pixels)
+        num_tries = 0
+        highest_point_altitude = 0
+        while num_tries < 10 and highest_point_altitude <= 0:
+            left = randint(0, shown_screen_dimensions[0] - 1 - state.selection_pixel_size[0])
+            print(shown_screen_dimensions[0] - 1 - state.selection_pixel_size[0])
+            right = left + state.selection_pixel_size[0]
+            top = randint(0, shown_screen_dimensions[1] - 1 - state.selection_pixel_size[1])
+            bottom = top + state.selection_pixel_size[1]
+            state.points = ((left, top), (right, top), (right, bottom), (left, bottom))
+            state.selected_area_height_map = settings.height_map[
+                state.points[0][1] : state.points[0][1] + state.selection_pixel_size[1],
+                state.points[0][0] : state.points[0][0] + state.selection_pixel_size[0],
+            ]
+            highest_point_altitude = state.selected_area_height_map.max()
+
+    state.scaled_points = [(int(x * settings.scale_ratio), int(y * settings.scale_ratio)) for x, y in state.points]
     state.float_pixel_size = (
         settings.screen_size[0] / state.selection_pixel_size[0],
         settings.screen_size[1] / state.selection_pixel_size[1],
     )
     state.center_offset = (state.float_pixel_size[0] / 2, state.float_pixel_size[1] / 2)
 
-    shown_screen_dimensions = [int(i / settings.scale_ratio) for i in settings.screen_size]
-
-    num_tries = 0
-    highest_point_altitude = 0
-    while num_tries < 10 and highest_point_altitude <= 0:
-        left = randint(0, shown_screen_dimensions[0] - 1 - state.selection_pixel_size[0])
-        right = left + state.selection_pixel_size[0]
-        top = randint(0, shown_screen_dimensions[1] - 1 - state.selection_pixel_size[1])
-        bottom = top + state.selection_pixel_size[1]
-        state.points = ((left, top), (right, top), (right, bottom), (left, bottom))
-        state.selected_area_height_map = settings.height_map[
-            state.points[0][1] : state.points[0][1] + state.selection_pixel_size[1],
-            state.points[0][0] : state.points[0][0] + state.selection_pixel_size[0],
-        ]
-        highest_point_altitude = state.selected_area_height_map.max()
-
-    state.scaled_points = [(int(x * settings.scale_ratio), int(y * settings.scale_ratio)) for x, y in state.points]
     pygame.draw.polygon(
         settings.screen_size_height_image,
         settings.selection_line_colour,
@@ -418,9 +451,9 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                     heapq.heappush(queue, (get_height_by_key(adjacent_node, state), adjacent_node))
             yield
 
-        print(f"Exit node {node}")
-        print(f"Queued nodes {nodes_in_queue - merging_nodes}")
-        print(f"Operation complete: merging {merging_nodes}")
+        # print(f"Exit node {node}")
+        # print(f"Queued nodes {nodes_in_queue - merging_nodes}")
+        # print(f"Operation complete: merging {merging_nodes}")
 
         merged_node_key = tuple(sorted({node for node_key in merging_nodes for node in node_key}))
         neighbours = {node for merging_node in merging_nodes for node in state.graph[merging_node]} - set(
