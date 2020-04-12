@@ -33,4 +33,4 @@ Another attempt at writing the river flow algorithm focused on visualizations
 
 ### Screenshot
 
-![Graph of links between places with different heights][doc/screenshot.png]
+![Graph of links between places with different heights](doc/screenshot.png)
