@@ -71,3 +71,31 @@ def create_graph(node_merge_operations, skip_nodes, non_skip_nodes, state):
                 graph[node_key].append(adjacent_node_key)
 
     return dict(graph)
+
+
+def find_low_nodes(graph, state):
+    def get_height_by_key(key):
+        return state.selected_area_height_map[key[0][1], key[0][0]]
+
+    def does_node_touch_border(node):
+        if node[0] == 0:
+            return True
+        if node[1] == 0:
+            return True
+        if node[0] == state.selection_pixel_size[0] - 1:
+            return True
+        if node[1] == state.selection_pixel_size[1] - 1:
+            return True
+        return False
+
+    low_nodes = []
+    for node_key, adjacent_nodes in graph.items():
+        if any(does_node_touch_border(node) for node in node_key):
+            continue
+        height = get_height_by_key(node_key)
+        for adjacent_node_key in adjacent_nodes:
+            if height > get_height_by_key(adjacent_node_key):
+                break
+        else:
+            low_nodes.append(node_key)
+    return low_nodes

@@ -11,6 +11,7 @@ from animations import (
     add_circles,
     add_edges,
     merge_equal_height_nodes,
+    highlight_low_nodes,
 )
 
 
@@ -34,6 +35,7 @@ class VisRenderer:
             add_circles(screen, self.state, self.settings),
             add_edges(screen, self.state, self.settings),
             merge_equal_height_nodes(screen, self.state, self.settings),
+            highlight_low_nodes(screen, self.state, self.settings),
         ]
         self.main_loop()
 

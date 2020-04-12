@@ -18,7 +18,7 @@ Another attempt at writing the river flow algorithm focused on visualizations
 * Zoom to map and show heightmap
 * Select small area and zoom
 * Show only heightmap as grid of squares
-* Move squares appart and show linking lines
+* Move squares apart and show linking lines
 * Show equal height nodes
 * 1 by 1 merge equal height nodes
 

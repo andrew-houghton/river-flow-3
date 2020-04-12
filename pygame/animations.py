@@ -4,7 +4,7 @@ from random import randint
 import pygame
 from matplotlib import cm
 from pprint import pprint
-from algorithms import equal_height_node_merge, create_graph
+from algorithms import equal_height_node_merge, create_graph, find_low_nodes
 
 
 def starting_image(screen, state: VisState, settings: VisSettings) -> Generator:
@@ -291,5 +291,22 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
         yield
 
 
-def flooding(screen, state: VisState, settings: VisSettings) -> Generator:
+def highlight_low_nodes(screen, state: VisState, settings: VisSettings) -> Generator:
+    circle_radius = int(max(*state.float_pixel_size) * 0.37)
+
+    state.low_nodes = find_low_nodes(state.graph, state)
+    print(f"Found {len(low_nodes)} low nodes")
+
+    for low_node in state.low_nodes:
+        new_location = (sum(x for x, y in low_node) / len(low_node), sum(y for x, y in low_node) / len(low_node))
+        pygame.draw.circle(
+            screen,
+            (255, 0, 0),
+            (
+                int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+            ),
+            circle_radius,
+            3,
+        )
     yield
