@@ -343,69 +343,25 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
     if not state.low_nodes:
         yield
 
-    low_node = state.low_nodes[0]
-    lake_height = get_height_by_key(low_node, state)
-    queue = [(lake_height, low_node)]
-    nodes_in_queue = {low_node}
-    merging_nodes = {low_node}
+    for low_node in state.low_nodes:
+        # TODO check if this node was already visited in an earlier flood (and if yes then skip)
+        lake_height = get_height_by_key(low_node, state)
+        queue = [(lake_height, low_node)]
+        nodes_in_queue = {low_node}
+        merging_nodes = {low_node}
 
-    while True:
-        try:
-            node_height, node = heapq.heappop(queue)
-        except IndexError:
-            print("heap ran out of items but it shouldn't")
-            break
+        while True:
+            try:
+                node_height, node = heapq.heappop(queue)
+            except IndexError:
+                print("heap ran out of items but it shouldn't")
+                break
 
-        new_location = (sum(x for x, y in node) / len(node), sum(y for x, y in node) / len(node))
-        if node_height < lake_height:
-            pygame.draw.circle(
-                screen,
-                (0, 255, 0),
-                (
-                    int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
-                    int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
-                ),
-                circle_radius,
-                3,
-            )
-            break
-        lake_height = node_height
-        merging_nodes.add(node)
-
-        # If node is a border then this means the flow can go off the edge. merging should stop after this node
-        if any(does_node_touch_border(i) for i in node):
-            pygame.draw.circle(
-                screen,
-                (0, 255, 0),
-                (
-                    int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
-                    int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
-                ),
-                circle_radius,
-                3,
-            )
-            break
-
-        pygame.draw.circle(
-            screen,
-            (255, 0, 0),
-            (
-                int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
-                int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
-            ),
-            circle_radius,
-            3,
-        )
-
-        for adjacent_node in state.graph[node]:
-            if adjacent_node not in nodes_in_queue:
-                new_location = (
-                    sum(x for x, y in adjacent_node) / len(adjacent_node),
-                    sum(y for x, y in adjacent_node) / len(adjacent_node),
-                )
+            new_location = (sum(x for x, y in node) / len(node), sum(y for x, y in node) / len(node))
+            if node_height < lake_height:
                 pygame.draw.circle(
                     screen,
-                    (255, 165, 0),
+                    (0, 255, 0),
                     (
                         int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
                         int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
@@ -413,8 +369,66 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                     circle_radius,
                     3,
                 )
-                nodes_in_queue.add(adjacent_node)
-                heapq.heappush(queue, (get_height_by_key(adjacent_node, state), adjacent_node))
+                break
+            lake_height = node_height
+            merging_nodes.add(node)
+
+            # If node is a border then this means the flow can go off the edge. merging should stop after this node
+            if any(does_node_touch_border(i) for i in node):
+                pygame.draw.circle(
+                    screen,
+                    (0, 255, 0),
+                    (
+                        int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                        int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+                    ),
+                    circle_radius,
+                    3,
+                )
+                break
+
+            pygame.draw.circle(
+                screen,
+                (255, 0, 0),
+                (
+                    int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                    int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+                ),
+                circle_radius,
+                3,
+            )
+
+            for adjacent_node in state.graph[node]:
+                if adjacent_node not in nodes_in_queue:
+                    new_location = (
+                        sum(x for x, y in adjacent_node) / len(adjacent_node),
+                        sum(y for x, y in adjacent_node) / len(adjacent_node),
+                    )
+                    pygame.draw.circle(
+                        screen,
+                        (255, 165, 0),
+                        (
+                            int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                            int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+                        ),
+                        circle_radius,
+                        3,
+                    )
+                    nodes_in_queue.add(adjacent_node)
+                    heapq.heappush(queue, (get_height_by_key(adjacent_node, state), adjacent_node))
+            yield
+
+        print(f"Exit node {node}")
+        print(f"Queued nodes {nodes_in_queue - merging_nodes}")
+        print(f"Operation complete: merging {merging_nodes}")
+
+        merged_node_key = tuple(sorted({node for node_key in merging_nodes for node in node_key}))
+        neighbours = {node for merging_node in merging_nodes for node in state.graph[merging_node]} - set(
+            merging_nodes
+        )
+        for neighbour in neighbours:
+            updated_neighbours = set(state.graph[neighbour]) - merging_nodes
+            updated_neighbours.add(merged_node_key)
+            state.graph[neighbour] = tuple(sorted(updated_neighbours))
+        state.graph[merged_node_key] = tuple(sorted(neighbours))
         yield
-    print(f"Operation complete: merging {merging_nodes}")
-    yield
