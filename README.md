@@ -21,3 +21,16 @@ Another attempt at writing the river flow algorithm focused on visualizations
 * Move squares appart and show linking lines
 * Show equal height nodes
 * 1 by 1 merge equal height nodes
+
+### Instructions
+
+1. Create virtual environment `virtualenv -p python3.7 venv`
+2. Install required packages `pip install -r requirements.txt`
+3. `cd pygame`
+4. `python renderer.py`
+5. Press right arrow key to advance
+6. Press ESC at any time to exit
+
+### Screenshot
+
+![Graph of links between places with different heights][doc/screenshot.png]
