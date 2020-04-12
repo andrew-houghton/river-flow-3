@@ -1,4 +1,5 @@
 from functools import partial
+from collections import defaultdict
 
 
 def check_nodes_equal_height(node_a, node_b, state, settings):
@@ -30,6 +31,7 @@ def equal_height_node_merge(state, settings):
                     node_merge_operations.append(visited)
                     for node in visited:
                         skip_nodes.add(node)
+
     node_movements = {}
     for merging_nodes in node_merge_operations:
         new_location = (
@@ -38,4 +40,34 @@ def equal_height_node_merge(state, settings):
         )
         for node in merging_nodes:
             node_movements[node] = new_location
-    return node_movements, skip_nodes
+    return node_movements, skip_nodes, node_merge_operations
+
+
+def create_graph(node_merge_operations, skip_nodes, non_skip_nodes, state):
+    from animations import _get_adjacent_nodes
+
+    # For every original position
+    # Lookup the current positions new key
+
+    # Loop through the adjacent nodes
+    # Find the new keys for those adjacent nodes
+
+    # Filter out all adjacent nodes which have the same key as the current node
+    # Add an edge to the adjacent new nodes
+
+    graph = defaultdict(list)
+    new_key = {}
+    for merging_nodes in node_merge_operations:
+        for node in merging_nodes:
+            new_key[node] = tuple(sorted(merging_nodes))
+
+    for node in sorted(list(skip_nodes) + non_skip_nodes):
+        node_key = new_key.get(node, (node,))
+
+        adjacent_nodes = _get_adjacent_nodes(node, state)
+        for adjacent_node in adjacent_nodes:
+            adjacent_node_key = new_key.get(adjacent_node, (adjacent_node,))
+            if adjacent_node_key != node_key:
+                graph[node_key].append(adjacent_node_key)
+
+    return dict(graph)

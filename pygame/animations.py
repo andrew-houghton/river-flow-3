@@ -4,7 +4,7 @@ from random import randint
 import pygame
 from matplotlib import cm
 from pprint import pprint
-from algorithms import equal_height_node_merge
+from algorithms import equal_height_node_merge, create_graph
 
 
 def starting_image(screen, state: VisState, settings: VisSettings) -> Generator:
@@ -43,12 +43,21 @@ def display_selection_polygon(screen, state: VisState, settings: VisSettings) ->
     state.center_offset = (state.float_pixel_size[0] / 2, state.float_pixel_size[1] / 2)
 
     shown_screen_dimensions = [int(i / settings.scale_ratio) for i in settings.screen_size]
-    left = randint(0, shown_screen_dimensions[0] - 1 - state.selection_pixel_size[0])
-    right = left + state.selection_pixel_size[0]
-    top = randint(0, shown_screen_dimensions[1] - 1 - state.selection_pixel_size[1])
-    bottom = top + state.selection_pixel_size[1]
 
-    state.points = ((left, top), (right, top), (right, bottom), (left, bottom))
+    num_tries = 0
+    highest_point_altitude = 0
+    while num_tries < 10 and highest_point_altitude <= 0:
+        left = randint(0, shown_screen_dimensions[0] - 1 - state.selection_pixel_size[0])
+        right = left + state.selection_pixel_size[0]
+        top = randint(0, shown_screen_dimensions[1] - 1 - state.selection_pixel_size[1])
+        bottom = top + state.selection_pixel_size[1]
+        state.points = ((left, top), (right, top), (right, bottom), (left, bottom))
+        state.selected_area_height_map = settings.height_map[
+            state.points[0][1] : state.points[0][1] + state.selection_pixel_size[0],
+            state.points[0][0] : state.points[0][0] + state.selection_pixel_size[1],
+        ]
+        highest_point_altitude = state.selected_area_height_map.max()
+
     state.scaled_points = [(int(x * settings.scale_ratio), int(y * settings.scale_ratio)) for x, y in state.points]
     pygame.draw.polygon(
         settings.screen_size_height_image,
@@ -166,14 +175,13 @@ def _draw_line(surface, from_node, to_node, state):
 
 
 def add_edges(screen, state: VisState, settings: VisSettings) -> Generator:
-    screen.fill((0, 0, 0))
     for x in range(state.selection_pixel_size[0]):
         for y in range(state.selection_pixel_size[1]):
             if x > 0:
                 _draw_line(screen, (x, y), (x - 1, y), state)
             if y > 0:
                 _draw_line(screen, (x, y), (x, y - 1), state)
-        screen.blit(state.circles_surface, (0, 0))
+            screen.blit(state.circles_surface, (0, 0))
         yield
 
 
@@ -185,17 +193,15 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
     # for every point which moved calculate it's start and end position
     # then render frames 1 by one by redrawing all the circles which move, and the connections to those points
 
-    node_movements, skip_nodes = equal_height_node_merge(state, settings)
-
+    node_movements, skip_nodes, node_merge_operations = equal_height_node_merge(state, settings)
     state.circles_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
-
-    # TODO collect these nodes in the loop above?
     non_skip_nodes = [
         (x, y)
         for x in range(state.selection_pixel_size[0])
         for y in range(state.selection_pixel_size[1])
         if (x, y) not in skip_nodes
     ]
+    state.graph = create_graph(node_merge_operations, skip_nodes, non_skip_nodes, state)
     for from_node in non_skip_nodes:
         for to_node in non_skip_nodes:
             if from_node > to_node:
@@ -255,4 +261,4 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
 
 
 def flooding(screen, state: VisState, settings: VisSettings) -> Generator:
-    pass
+    yield

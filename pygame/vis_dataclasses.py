@@ -31,7 +31,7 @@ class VisSettings:
         self,
         screen_size: Tuple[int, int],
         framerate: int = 165,
-        max_pixels: int = 100,
+        max_pixels: int = 10,
         selection_line_width: int = 3,
         selection_line_colour: Tuple[int, int, int] = (0, 204, 51),
     ):
