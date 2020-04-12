@@ -53,8 +53,8 @@ def display_selection_polygon(screen, state: VisState, settings: VisSettings) ->
         bottom = top + state.selection_pixel_size[1]
         state.points = ((left, top), (right, top), (right, bottom), (left, bottom))
         state.selected_area_height_map = settings.height_map[
-            state.points[0][1] : state.points[0][1] + state.selection_pixel_size[0],
-            state.points[0][0] : state.points[0][0] + state.selection_pixel_size[1],
+            state.points[0][1] : state.points[0][1] + state.selection_pixel_size[1],
+            state.points[0][0] : state.points[0][0] + state.selection_pixel_size[0],
         ]
         highest_point_altitude = state.selected_area_height_map.max()
 
@@ -106,16 +106,23 @@ def scale_up_selection(screen, state: VisState, settings: VisSettings) -> Genera
         yield
 
 
-def _draw_circles(surface, state, settings, skipped_coordinates=None):
+def _draw_circles(surface, state, settings, skipped_coordinates=None, absolute_scale=True):
     skipped_coordinates = skipped_coordinates or []
     circle_radius = int(max(*state.float_pixel_size) * 0.35)
-    height_array = (settings.height_map // (settings.height_map.max() / 255)).astype("int32")
+    if absolute_scale:
+        height_array = (settings.height_map // (settings.height_map.max() / 255)).astype("int32")
+    else:
+        height_array = state.selected_area_height_map - state.selected_area_height_map.min()
+        height_array = (height_array // (height_array.max() / 255)).astype("int32")
 
     for x in range(state.selection_pixel_size[0]):
         for y in range(state.selection_pixel_size[1]):
             if (x, y) not in skipped_coordinates:
-                height = height_array[state.points[0][1] + y, state.points[0][0] + x]
-                colour = [i * 255 for i in cm.viridis(height / 255)[:3]]
+                if absolute_scale:
+                    height = height_array[state.points[0][1] + y, state.points[0][0] + x]
+                else:
+                    height = height_array[y, x]
+                colour = [i * 255 for i in cm.gist_earth(height / 255)[:3]]
                 pygame.draw.circle(
                     surface,
                     colour,
@@ -175,13 +182,37 @@ def _draw_line(surface, from_node, to_node, state):
 
 
 def add_edges(screen, state: VisState, settings: VisSettings) -> Generator:
+    height_array = state.selected_area_height_map - state.selected_area_height_map.min()
+    height_array = (height_array // (height_array.max() / 255)).astype("int32")
+    circle_radius = int(max(*state.float_pixel_size) * 0.35)
     for x in range(state.selection_pixel_size[0]):
         for y in range(state.selection_pixel_size[1]):
             if x > 0:
                 _draw_line(screen, (x, y), (x - 1, y), state)
             if y > 0:
                 _draw_line(screen, (x, y), (x, y - 1), state)
-            screen.blit(state.circles_surface, (0, 0))
+
+        if x > 0:
+            for y in range(state.selection_pixel_size[1]):
+                colour = [i * 255 for i in cm.gist_earth(height_array[y, x] / 255)[:3]]
+                pygame.draw.circle(
+                    screen,
+                    colour,
+                    (
+                        int((x - 1) * state.float_pixel_size[0] + state.center_offset[0]),
+                        int(y * state.float_pixel_size[1] + state.center_offset[1]),
+                    ),
+                    circle_radius,
+                )
+                pygame.draw.circle(
+                    screen,
+                    colour,
+                    (
+                        int(x * state.float_pixel_size[0] + state.center_offset[0]),
+                        int(y * state.float_pixel_size[1] + state.center_offset[1]),
+                    ),
+                    circle_radius,
+                )
         yield
 
 
@@ -210,11 +241,12 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
                 ):
                     _draw_line(state.circles_surface, from_node, to_node, state)
 
-    _draw_circles(state.circles_surface, state, settings, skip_nodes)
+    _draw_circles(state.circles_surface, state, settings, skip_nodes, absolute_scale=False)
 
     num_steps = 50
     circle_radius = int(max(*state.float_pixel_size) * 0.35)
-    height_array = (settings.height_map // (settings.height_map.max() / 255)).astype("int32")
+    height_array = state.selected_area_height_map - state.selected_area_height_map.min()
+    height_array = (height_array // (height_array.max() / 255)).astype("int32")
 
     def get_updated_node_position(node, new_position, progress):
         x = node[0] + i / num_steps * (new_position[0] - node[0])
@@ -243,8 +275,7 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
 
         for node, new_position in node_movements.items():
             current_x, current_y = get_updated_node_position(node, new_position, i / num_steps)
-            height = height_array[state.points[0][1] + node[1], state.points[0][0] + node[0]]
-            colour = [i * 255 for i in cm.viridis(height / 255)[:3]]
+            colour = [i * 255 for i in cm.gist_earth(height_array[node[1], node[0]] / 255)[:3]]
             pygame.draw.circle(
                 moving_circles_surface,
                 colour,

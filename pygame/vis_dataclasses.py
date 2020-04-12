@@ -18,7 +18,7 @@ def load_true_colour():
 
 
 def height_map_to_image(height_map) -> pygame.Surface:
-    image = Image.fromarray(numpy.uint8(cm.viridis(height_map / height_map.max()) * 255))
+    image = Image.fromarray(numpy.uint8(cm.gist_earth(height_map / height_map.max()) * 255))
     return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
 
 
@@ -31,7 +31,7 @@ class VisSettings:
         self,
         screen_size: Tuple[int, int],
         framerate: int = 165,
-        max_pixels: int = 10,
+        max_pixels: int = 50,
         selection_line_width: int = 3,
         selection_line_colour: Tuple[int, int, int] = (0, 204, 51),
     ):
