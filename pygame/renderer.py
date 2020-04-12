@@ -12,6 +12,7 @@ from animations import (
     add_edges,
     merge_equal_height_nodes,
     highlight_low_nodes,
+    flood_points,
 )
 
 
@@ -36,6 +37,7 @@ class VisRenderer:
             add_edges(screen, self.state, self.settings),
             merge_equal_height_nodes(screen, self.state, self.settings),
             highlight_low_nodes(screen, self.state, self.settings),
+            flood_points(screen, self.state, self.settings),
         ]
         self.main_loop()
 

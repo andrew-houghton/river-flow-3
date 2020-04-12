@@ -5,6 +5,7 @@ import pygame
 from matplotlib import cm
 from pprint import pprint
 from algorithms import equal_height_node_merge, create_graph, find_low_nodes
+import heapq
 
 
 def starting_image(screen, state: VisState, settings: VisSettings) -> Generator:
@@ -291,11 +292,15 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
         yield
 
 
+def get_height_by_key(key, state):
+    return state.selected_area_height_map[key[0][1], key[0][0]]
+
+
 def highlight_low_nodes(screen, state: VisState, settings: VisSettings) -> Generator:
     circle_radius = int(max(*state.float_pixel_size) * 0.37)
 
     state.low_nodes = find_low_nodes(state.graph, state)
-    print(f"Found {len(low_nodes)} low nodes")
+    print(f"Found {len(state.low_nodes)} low nodes")
 
     for low_node in state.low_nodes:
         new_location = (sum(x for x, y in low_node) / len(low_node), sum(y for x, y in low_node) / len(low_node))
@@ -309,4 +314,113 @@ def highlight_low_nodes(screen, state: VisState, settings: VisSettings) -> Gener
             circle_radius,
             3,
         )
+    state.low_nodes = sorted(state.low_nodes, key=lambda key: get_height_by_key(key, state))
+    yield
+
+
+def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
+    """
+    Highlight all the neighbours (and add them to a priority queue).
+
+    Loop through the priority queue;
+        Check if the node is lower than the lake
+        Merge the node with the lake
+        Add the other neighbours to the priority queue
+    """
+
+    def does_node_touch_border(node):
+        if node[0] == 0:
+            return True
+        if node[1] == 0:
+            return True
+        if node[0] == state.selection_pixel_size[0] - 1:
+            return True
+        if node[1] == state.selection_pixel_size[1] - 1:
+            return True
+        return False
+
+    circle_radius = int(max(*state.float_pixel_size) * 0.35)
+    if not state.low_nodes:
+        yield
+
+    low_node = state.low_nodes[0]
+    lake_height = get_height_by_key(low_node, state)
+    queue = [(lake_height, low_node)]
+    nodes_in_queue = {low_node}
+
+    while True:
+        try:
+            node_height, node = heapq.heappop(queue)
+        except IndexError:
+            print("heap ran out of items but it shouldn't")
+            break
+
+        print(f"Moved to next node {node}")
+        print(f"Adjacent nodes are {state.graph[node]}")
+
+        new_location = (sum(x for x, y in node) / len(node), sum(y for x, y in node) / len(node))
+        if node_height < lake_height:
+            print("Exited because we found an outflow route")
+            pygame.draw.circle(
+                screen,
+                (0, 255, 0),
+                (
+                    int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                    int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+                ),
+                circle_radius,
+                3,
+            )
+            break
+
+        lake_height = node_height
+        pygame.draw.circle(
+            screen,
+            (255, 0, 0),
+            (
+                int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+            ),
+            circle_radius,
+            3,
+        )
+        yield
+
+        # If node is a border then this means the flow can go off the edge. merging should stop after this node
+        if any(does_node_touch_border(i) for i in node):
+            print("Existed because we reached border")
+            pygame.draw.circle(
+                screen,
+                (0, 255, 0),
+                (
+                    int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                    int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+                ),
+                circle_radius,
+                3,
+            )
+            break
+
+        for adjacent_node in state.graph[node]:
+            if adjacent_node not in nodes_in_queue:
+                print(f"Adding adjacent node {adjacent_node}")
+                new_location = (
+                    sum(x for x, y in adjacent_node) / len(adjacent_node),
+                    sum(y for x, y in adjacent_node) / len(adjacent_node),
+                )
+                pygame.draw.circle(
+                    screen,
+                    (255, 165, 0),
+                    (
+                        int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                        int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+                    ),
+                    circle_radius,
+                    3,
+                )
+                nodes_in_queue.add(adjacent_node)
+                heapq.heappush(queue, (get_height_by_key(adjacent_node, state), adjacent_node))
+            else:
+                print(f"Skipped {adjacent_node} because already visited")
+        yield
     yield
