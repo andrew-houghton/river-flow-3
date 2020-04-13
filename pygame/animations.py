@@ -75,7 +75,6 @@ def display_selection_polygon(screen, state: VisState, settings: VisSettings) ->
         highest_point_altitude = 0
         while num_tries < 10 and highest_point_altitude <= 0:
             left = randint(0, shown_screen_dimensions[0] - 1 - state.selection_pixel_size[0])
-            print(shown_screen_dimensions[0] - 1 - state.selection_pixel_size[0])
             right = left + state.selection_pixel_size[0]
             top = randint(0, shown_screen_dimensions[1] - 1 - state.selection_pixel_size[1])
             bottom = top + state.selection_pixel_size[1]
@@ -377,7 +376,9 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
         yield
 
     for low_node in state.low_nodes:
-        # TODO check if this node was already visited in an earlier flood (and if yes then skip)
+        if low_node not in state.graph:
+            continue
+
         lake_height = get_height_by_key(low_node, state)
         queue = [(lake_height, low_node)]
         nodes_in_queue = {low_node}
@@ -451,10 +452,6 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                     heapq.heappush(queue, (get_height_by_key(adjacent_node, state), adjacent_node))
             yield
 
-        # print(f"Exit node {node}")
-        # print(f"Queued nodes {nodes_in_queue - merging_nodes}")
-        # print(f"Operation complete: merging {merging_nodes}")
-
         merged_node_key = tuple(sorted({node for node_key in merging_nodes for node in node_key}))
         neighbours = {node for merging_node in merging_nodes for node in state.graph[merging_node]} - set(
             merging_nodes
@@ -464,4 +461,99 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
             updated_neighbours.add(merged_node_key)
             state.graph[neighbour] = tuple(sorted(updated_neighbours))
         state.graph[merged_node_key] = tuple(sorted(neighbours))
-        yield
+
+        # Find all the nodes don't touch the merged area
+        untouched_nodes = state.graph.keys() - {merged_node_key} - set(merging_nodes)
+        untouched_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
+
+        height_array = state.selected_area_height_map - state.selected_area_height_map.min()
+        height_array = (height_array // (height_array.max() / 255)).astype("int32")
+
+        for node in untouched_nodes:
+            x = sum(x for x, y in node) / len(node)
+            y = sum(y for x, y in node) / len(node)
+            for neighbour in state.graph[node]:
+                neighbour_x = sum(x for x, y in neighbour) / len(neighbour)
+                neighbour_y = sum(y for x, y in neighbour) / len(neighbour)
+                if (x, y) < (neighbour_x, neighbour_y):
+                    _draw_line(untouched_surface, (x, y), (neighbour_x, neighbour_y), state)
+
+        for node in untouched_nodes:
+            x = sum(x for x, y in node) / len(node)
+            y = sum(y for x, y in node) / len(node)
+            height = height_array[node[0][1], node[0][0]]
+            colour = [i * 255 for i in cm.gist_earth(height / 255)[:3]]
+            pygame.draw.circle(
+                untouched_surface,
+                colour,
+                (
+                    int(x * state.float_pixel_size[0] + state.center_offset[0]),
+                    int(y * state.float_pixel_size[1] + state.center_offset[1]),
+                ),
+                circle_radius,
+            )
+            if node in state.low_nodes:
+                pygame.draw.circle(
+                    untouched_surface,
+                    (255, 0, 0),
+                    (
+                        int(x * state.float_pixel_size[0] + state.center_offset[0]),
+                        int(y * state.float_pixel_size[1] + state.center_offset[1]),
+                    ),
+                    circle_radius,
+                    3,
+                )
+
+        num_steps = 40
+        new_position = (
+            sum(x for x, y in merged_node_key) / len(merged_node_key),
+            sum(y for x, y in merged_node_key) / len(merged_node_key),
+        )
+        for i in range(1, num_steps + 1):
+            screen.fill((0, 0, 0))
+            screen.blit(untouched_surface, (0, 0))
+            for original_node in merging_nodes:
+                original_node_position = (
+                    sum(x for x, y in original_node) / len(original_node),
+                    sum(y for x, y in original_node) / len(original_node),
+                )
+                actual_node_position = (
+                    (new_position[0] - original_node_position[0]) * i / num_steps + original_node_position[0],
+                    (new_position[1] - original_node_position[1]) * i / num_steps + original_node_position[1],
+                )
+                for neighbour in state.graph[original_node]:
+                    if neighbour not in merging_nodes:
+                        neighbour_position = (
+                            sum(x for x, y in neighbour) / len(neighbour),
+                            sum(y for x, y in neighbour) / len(neighbour),
+                        )
+                        # Move edge from to position
+                        _draw_line(screen, neighbour_position, actual_node_position, state)
+
+                        height = height_array[neighbour[0][1], neighbour[0][0]]
+                        colour = [i * 255 for i in cm.gist_earth(height / 255)[:3]]
+                        pygame.draw.circle(
+                            screen,
+                            colour,
+                            (
+                                int(neighbour_position[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                                int(neighbour_position[1] * state.float_pixel_size[1] + state.center_offset[1]),
+                            ),
+                            circle_radius,
+                        )
+
+                height = height_array[original_node[0][1], original_node[0][0]]
+                colour = [i * 255 for i in cm.gist_earth(height / 255)[:3]]
+                pygame.draw.circle(
+                    screen,
+                    colour,
+                    (
+                        int(actual_node_position[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                        int(actual_node_position[1] * state.float_pixel_size[1] + state.center_offset[1]),
+                    ),
+                    circle_radius,
+                )
+            yield
+
+        for merging_node in merging_nodes:
+            del state.graph[merging_node]
