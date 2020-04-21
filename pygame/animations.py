@@ -456,6 +456,53 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                     heapq.heappush(queue, (get_height_by_key(adjacent_node, state), adjacent_node))
             yield
 
+        # Add all equal height nodes
+        while True:
+            try:
+                node_height, node = heapq.heappop(queue)
+            except IndexError:
+                break
+
+            # Don't merge the outflow points to the lake
+            if node_height < lake_height:
+                continue
+            elif node_height == lake_height:
+                # Merge this
+                merging_nodes.add(node)
+                new_location = (sum(x for x, y in node) / len(node), sum(y for x, y in node) / len(node))
+                pygame.draw.circle(
+                    screen,
+                    (255, 0, 0),
+                    (
+                        int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                        int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+                    ),
+                    circle_radius,
+                    3,
+                )
+
+                for adjacent_node in state.graph[node]:
+                    if adjacent_node not in nodes_in_queue:
+                        new_location = (
+                            sum(x for x, y in adjacent_node) / len(adjacent_node),
+                            sum(y for x, y in adjacent_node) / len(adjacent_node),
+                        )
+                        pygame.draw.circle(
+                            screen,
+                            (255, 165, 0),
+                            (
+                                int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                                int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+                            ),
+                            circle_radius,
+                            3,
+                        )
+                        nodes_in_queue.add(adjacent_node)
+                        heapq.heappush(queue, (get_height_by_key(adjacent_node, state), adjacent_node))
+                yield
+            else:
+                break
+
         merged_node_key = tuple(sorted({node for node_key in merging_nodes for node in node_key}))
         neighbours = {node for merging_node in merging_nodes for node in state.graph[merging_node]} - set(
             merging_nodes
@@ -562,6 +609,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
 
         for merging_node in merging_nodes:
             del state.graph[merging_node]
+
 
     print("Checking node flooding")
     for node, neighbours in state.graph.items():
