@@ -380,6 +380,10 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
             continue
 
         lake_height = get_height_by_key(low_node, state)
+        for neighbour in state.graph[low_node]:
+            if get_height_by_key(neighbour, state) < lake_height:
+                continue
+
         queue = [(lake_height, low_node)]
         nodes_in_queue = {low_node}
         merging_nodes = {low_node}
@@ -461,6 +465,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
             updated_neighbours.add(merged_node_key)
             state.graph[neighbour] = tuple(sorted(updated_neighbours))
         state.graph[merged_node_key] = tuple(sorted(neighbours))
+        state.selected_area_height_map[merged_node_key[0][1], merged_node_key[0][0]] = lake_height
 
         # Find all the nodes don't touch the merged area
         untouched_nodes = state.graph.keys() - {merged_node_key} - set(merging_nodes)
@@ -504,7 +509,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                     3,
                 )
 
-        num_steps = 40
+        num_steps = 10
         new_position = (
             sum(x for x, y in merged_node_key) / len(merged_node_key),
             sum(y for x, y in merged_node_key) / len(merged_node_key),
