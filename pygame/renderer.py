@@ -14,6 +14,7 @@ from animations import (
     highlight_low_nodes,
     flood_points,
 )
+from line_profiler import LineProfiler
 
 
 class VisRenderer:
@@ -28,18 +29,23 @@ class VisRenderer:
         # screen = pygame.display.set_mode(self.settings.screen_size)
         self.clock = pygame.time.Clock()
 
-        self.animations = [
-            starting_image(screen, self.state, self.settings),
-            true_colour_to_height_map(screen, self.state, self.settings),
-            display_selection_polygon(screen, self.state, self.settings),
-            scale_up_selection(screen, self.state, self.settings),
-            add_circles(screen, self.state, self.settings),
-            add_edges(screen, self.state, self.settings),
-            merge_equal_height_nodes(screen, self.state, self.settings),
-            highlight_low_nodes(screen, self.state, self.settings),
-            flood_points(screen, self.state, self.settings),
+        self.animation_generators = [
+            starting_image,
+            true_colour_to_height_map,
+            display_selection_polygon,
+            scale_up_selection,
+            add_circles,
+            add_edges,
+            merge_equal_height_nodes,
+            highlight_low_nodes,
+            flood_points,
         ]
+
+        # lp = LineProfiler()
+        # self.animations = [lp(gen)(screen, self.state, self.settings) for gen in self.animation_generators]
+        self.animations = [gen(screen, self.state, self.settings) for gen in self.animation_generators]
         self.main_loop()
+        # lp.print_stats()
 
     def main_loop(self):
         frame_generator = self.next_animation()
