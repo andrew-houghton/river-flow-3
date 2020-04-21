@@ -609,19 +609,3 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
 
         for merging_node in merging_nodes:
             del state.graph[merging_node]
-
-
-    print("Checking node flooding")
-    for node, neighbours in state.graph.items():
-        if not  any(does_node_touch_border(i) for i in node):
-            node_height = get_height_by_key(node, state)
-            for neighbour in neighbours:
-                if node_height > get_height_by_key(neighbour, state):
-                    break
-            else:
-                print(node)
-                print(neighbour)
-                print(node_height)
-                print([get_height_by_key(neighbour, state) for neighbour in neighbours])
-                assert False
-    print("Finished flooding")
