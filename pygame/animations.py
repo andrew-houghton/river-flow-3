@@ -9,6 +9,10 @@ import heapq
 from functools import lru_cache
 
 
+@lru_cache(maxsize=10000)
+def get_node_centerpoint(node):
+    return (sum(x for x, _ in node) / len(node), sum(y for _, y in node) / len(node))
+
 
 @lru_cache(maxsize=4000)
 def get_colour_by_height(height):
@@ -273,13 +277,13 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
         if (x, y) not in skip_nodes
     ]
     state.graph = create_graph(node_merge_operations, skip_nodes, non_skip_nodes, state)
-    for from_node in non_skip_nodes:
-        for to_node in non_skip_nodes:
-            if from_node > to_node:
-                if (abs(from_node[0] - to_node[0]) == 1 and from_node[1] == to_node[1]) or (
-                    abs(from_node[1] - to_node[1]) == 1 and from_node[0] == to_node[0]
-                ):
-                    _draw_line(state.circles_surface, from_node, to_node, state)
+
+    non_skip_nodes_set = set(non_skip_nodes)
+    for from_node in non_skip_nodes_set:
+        if (from_node[0] + 1, from_node[1]) in non_skip_nodes_set:
+            _draw_line(state.circles_surface, from_node, (from_node[0] + 1, from_node[1]), state)
+        if (from_node[0], from_node[1] + 1) in non_skip_nodes_set:
+            _draw_line(state.circles_surface, from_node, (from_node[0], from_node[1] + 1), state)
 
     _draw_circles(state.circles_surface, state, settings, skip_nodes, absolute_scale=False)
 
@@ -342,7 +346,7 @@ def highlight_low_nodes(screen, state: VisState, settings: VisSettings) -> Gener
     print(f"Found {len(state.low_nodes)} low nodes")
 
     for low_node in state.low_nodes:
-        new_location = (sum(x for x, y in low_node) / len(low_node), sum(y for x, y in low_node) / len(low_node))
+        new_location = get_node_centerpoint(low_node)
         pygame.draw.circle(
             screen,
             (255, 0, 0),
@@ -402,7 +406,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                 print("heap ran out of items but it shouldn't")
                 break
 
-            new_location = (sum(x for x, y in node) / len(node), sum(y for x, y in node) / len(node))
+            new_location = get_node_centerpoint(node)
             if node_height < lake_height:
                 pygame.draw.circle(
                     screen,
@@ -445,10 +449,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
 
             for adjacent_node in state.graph[node]:
                 if adjacent_node not in nodes_in_queue:
-                    new_location = (
-                        sum(x for x, y in adjacent_node) / len(adjacent_node),
-                        sum(y for x, y in adjacent_node) / len(adjacent_node),
-                    )
+                    new_location = get_node_centerpoint(adjacent_node)
                     pygame.draw.circle(
                         screen,
                         (255, 165, 0),
@@ -476,7 +477,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
             elif node_height == lake_height:
                 # Merge this
                 merging_nodes.add(node)
-                new_location = (sum(x for x, y in node) / len(node), sum(y for x, y in node) / len(node))
+                new_location = get_node_centerpoint(node)
                 pygame.draw.circle(
                     screen,
                     (255, 0, 0),
@@ -490,10 +491,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
 
                 for adjacent_node in state.graph[node]:
                     if adjacent_node not in nodes_in_queue:
-                        new_location = (
-                            sum(x for x, y in adjacent_node) / len(adjacent_node),
-                            sum(y for x, y in adjacent_node) / len(adjacent_node),
-                        )
+                        new_location = get_node_centerpoint(adjacent_node)
                         pygame.draw.circle(
                             screen,
                             (255, 165, 0),
@@ -529,25 +527,22 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
         height_array = (height_array // (height_array.max() / 255)).astype("int32")
 
         for node in untouched_nodes:
-            x = sum(x for x, y in node) / len(node)
-            y = sum(y for x, y in node) / len(node)
+            new_location = get_node_centerpoint(node)
             for neighbour in state.graph[node]:
-                neighbour_x = sum(x for x, y in neighbour) / len(neighbour)
-                neighbour_y = sum(y for x, y in neighbour) / len(neighbour)
-                if (x, y) < (neighbour_x, neighbour_y):
-                    _draw_line(untouched_surface, (x, y), (neighbour_x, neighbour_y), state)
+                if neighbour < node:
+                    neighbour_location = get_node_centerpoint(neighbour)
+                    _draw_line(untouched_surface, new_location, neighbour_location, state)
 
         for node in untouched_nodes:
-            x = sum(x for x, y in node) / len(node)
-            y = sum(y for x, y in node) / len(node)
+            new_location = get_node_centerpoint(node)
             height = height_array[node[0][1], node[0][0]]
             colour = get_colour_by_height(height)
             pygame.draw.circle(
                 untouched_surface,
                 colour,
                 (
-                    int(x * state.float_pixel_size[0] + state.center_offset[0]),
-                    int(y * state.float_pixel_size[1] + state.center_offset[1]),
+                    int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                    int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
                 ),
                 circle_radius,
             )
@@ -556,18 +551,15 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                     untouched_surface,
                     (255, 0, 0),
                     (
-                        int(x * state.float_pixel_size[0] + state.center_offset[0]),
-                        int(y * state.float_pixel_size[1] + state.center_offset[1]),
+                        int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                        int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
                     ),
                     circle_radius,
                     3,
                 )
 
         num_steps = 10
-        new_position = (
-            sum(x for x, y in merged_node_key) / len(merged_node_key),
-            sum(y for x, y in merged_node_key) / len(merged_node_key),
-        )
+        new_location = get_node_centerpoint(merged_node_key)
         for i in range(1, num_steps + 1):
             screen.fill((0, 0, 0))
             screen.blit(untouched_surface, (0, 0))
@@ -577,15 +569,12 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                     sum(y for x, y in original_node) / len(original_node),
                 )
                 actual_node_position = (
-                    (new_position[0] - original_node_position[0]) * i / num_steps + original_node_position[0],
-                    (new_position[1] - original_node_position[1]) * i / num_steps + original_node_position[1],
+                    (new_location[0] - original_node_position[0]) * i / num_steps + original_node_position[0],
+                    (new_location[1] - original_node_position[1]) * i / num_steps + original_node_position[1],
                 )
                 for neighbour in state.graph[original_node]:
                     if neighbour not in merging_nodes:
-                        neighbour_position = (
-                            sum(x for x, y in neighbour) / len(neighbour),
-                            sum(y for x, y in neighbour) / len(neighbour),
-                        )
+                        neighbour_position = get_node_centerpoint(neighbour)
                         # Move edge from to position
                         _draw_line(screen, neighbour_position, actual_node_position, state)
 
