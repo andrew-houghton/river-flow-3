@@ -6,6 +6,13 @@ from matplotlib import cm
 from pprint import pprint
 from algorithms import equal_height_node_merge, create_graph, find_low_nodes
 import heapq
+from functools import lru_cache
+
+
+
+@lru_cache(maxsize=4000)
+def get_colour_by_height(height):
+    return [i * 255 for i in cm.gist_earth(height / 255)[:3]]
 
 
 def starting_image(screen, state: VisState, settings: VisSettings) -> Generator:
@@ -155,7 +162,7 @@ def _draw_circles(surface, state, settings, skipped_coordinates=None, absolute_s
                     height = height_array[state.points[0][1] + y, state.points[0][0] + x]
                 else:
                     height = height_array[y, x]
-                colour = [i * 255 for i in cm.gist_earth(height / 255)[:3]]
+                colour = get_colour_by_height(height)
                 pygame.draw.circle(
                     surface,
                     colour,
@@ -227,7 +234,7 @@ def add_edges(screen, state: VisState, settings: VisSettings) -> Generator:
 
         if x > 0:
             for y in range(state.selection_pixel_size[1]):
-                colour = [i * 255 for i in cm.gist_earth(height_array[y, x] / 255)[:3]]
+                colour = get_colour_by_height(height_array[y, x])
                 pygame.draw.circle(
                     screen,
                     colour,
@@ -308,7 +315,7 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
 
         for node, new_position in node_movements.items():
             current_x, current_y = get_updated_node_position(node, new_position, i / num_steps)
-            colour = [i * 255 for i in cm.gist_earth(height_array[node[1], node[0]] / 255)[:3]]
+            colour = get_colour_by_height(height_array[node[1], node[0]])
             pygame.draw.circle(
                 moving_circles_surface,
                 colour,
@@ -534,7 +541,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
             x = sum(x for x, y in node) / len(node)
             y = sum(y for x, y in node) / len(node)
             height = height_array[node[0][1], node[0][0]]
-            colour = [i * 255 for i in cm.gist_earth(height / 255)[:3]]
+            colour = get_colour_by_height(height)
             pygame.draw.circle(
                 untouched_surface,
                 colour,
@@ -583,7 +590,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                         _draw_line(screen, neighbour_position, actual_node_position, state)
 
                         height = height_array[neighbour[0][1], neighbour[0][0]]
-                        colour = [i * 255 for i in cm.gist_earth(height / 255)[:3]]
+                        colour = get_colour_by_height(height)
                         pygame.draw.circle(
                             screen,
                             colour,
@@ -595,7 +602,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                         )
 
                 height = height_array[original_node[0][1], original_node[0][0]]
-                colour = [i * 255 for i in cm.gist_earth(height / 255)[:3]]
+                colour = get_colour_by_height(height)
                 pygame.draw.circle(
                     screen,
                     colour,
