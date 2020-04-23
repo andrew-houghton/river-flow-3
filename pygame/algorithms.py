@@ -99,3 +99,39 @@ def find_low_nodes(graph, state):
         else:
             low_nodes.append(node_key)
     return low_nodes
+
+
+def simulate_flow(state):
+    def get_height_by_key(key):
+        return state.selected_area_height_map[key[0][1], key[0][0]]
+
+    def does_node_touch_border(node):
+        if node[0] == 0:
+            return True
+        if node[1] == 0:
+            return True
+        if node[0] == state.selection_pixel_size[0] - 1:
+            return True
+        if node[1] == state.selection_pixel_size[1] - 1:
+            return True
+        return False
+
+    node_flows = defaultdict(float)
+
+    for node in sorted(state.graph, key=get_height_by_key, reverse=True):
+        node_flows[node] += 1
+        node_height = get_height_by_key(node)
+
+        if not any(does_node_touch_border(i) for i in node):
+            outflows = []
+            for neighbour in state.graph[node]:
+                neighbour_height = get_height_by_key(neighbour)
+                if neighbour_height < node_height:
+                    outflows.append((neighbour, node_height - neighbour_height))
+            assert outflows
+
+            total_outflow_height = sum(i[1] for i in outflows)
+            for neighbour, outflow_height in outflows:
+                node_flows[neighbour] += node_flows[node] * outflow_height / total_outflow_height
+
+        yield node, node_flows[node]

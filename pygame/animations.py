@@ -4,9 +4,11 @@ from random import randint
 import pygame
 from matplotlib import cm
 from pprint import pprint
-from algorithms import equal_height_node_merge, create_graph, find_low_nodes
+from algorithms import equal_height_node_merge, create_graph, find_low_nodes, simulate_flow
 import heapq
 from functools import lru_cache
+from collections import defaultdict
+import math
 
 
 @lru_cache(maxsize=10000)
@@ -150,7 +152,7 @@ def scale_up_selection(screen, state: VisState, settings: VisSettings) -> Genera
         yield
 
 
-def _draw_circles(surface, state, settings, skipped_coordinates=None, absolute_scale=True):
+def _draw_circles(surface, state, settings, skipped_coordinates=None, absolute_scale=True, set_colour=None):
     skipped_coordinates = skipped_coordinates or []
     circle_radius = int(max(*state.float_pixel_size) * 0.35)
     if absolute_scale:
@@ -166,7 +168,7 @@ def _draw_circles(surface, state, settings, skipped_coordinates=None, absolute_s
                     height = height_array[state.points[0][1] + y, state.points[0][0] + x]
                 else:
                     height = height_array[y, x]
-                colour = get_colour_by_height(height)
+                colour = set_colour or get_colour_by_height(height)
                 pygame.draw.circle(
                     surface,
                     colour,
@@ -605,3 +607,35 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
 
         for merging_node in merging_nodes:
             del state.graph[merging_node]
+
+
+def animate_flow(screen, state: VisState, settings: VisSettings) -> Generator:
+    circle_radius = max(*state.float_pixel_size) * 0.35
+    state.edges_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
+    for node in state.graph:
+        new_location = get_node_centerpoint(node)
+        for neighbour in state.graph[node]:
+            if neighbour < node:
+                neighbour_location = get_node_centerpoint(neighbour)
+                _draw_line(state.edges_surface, new_location, neighbour_location, state)
+
+    state.resized_selected_surface.set_alpha(255)
+    screen.blit(state.resized_selected_surface, (0, 0))
+    screen.blit(state.edges_surface, (0, 0))
+    yield
+
+    node_flows = list(simulate_flow(state))
+    maximum_flow = math.log(max(node_flows, key=lambda x:x[1])[1])
+
+    for node, flow in node_flows:
+        new_location = get_node_centerpoint(node)
+        pygame.draw.circle(
+            screen,
+            [i * 255 for i in cm.hot(math.log(flow) / maximum_flow)[:3]],
+            (
+                int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+                int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
+            ),
+            int(circle_radius * max(1, math.log(flow)/3)),
+        )
+        yield
