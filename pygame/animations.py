@@ -612,15 +612,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
 
 
 def animate_flow(screen, state: VisState, settings: VisSettings) -> Generator:
-    circle_radius = max(*state.float_pixel_size) * 0.35
-    state.edges_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
-    for node in state.graph:
-        new_location = get_node_centerpoint(node)
-        for neighbour in state.graph[node]:
-            if neighbour < node:
-                neighbour_location = get_node_centerpoint(neighbour)
-                _draw_line(state.edges_surface, new_location, neighbour_location, state)
-
+    circle_radius = int(max(*state.float_pixel_size) * 0.35)
     height_array = state.selected_area_height_map - state.selected_area_height_map.min()
     height_array = (height_array // (height_array.max() / 255)).astype("int32")
     image = Image.fromarray(numpy.uint8(cm.gist_earth(height_array) * 255))
@@ -631,15 +623,24 @@ def animate_flow(screen, state: VisState, settings: VisSettings) -> Generator:
 
     screen.blit(pygame_img, (0, 0))
 
-    state.node_flows = list(simulate_flow(state))
-    maximum_flow = math.log(max(state.node_flows, key=lambda x: x[1])[1])
+    state.node_flows, state.edge_flows = simulate_flow(state)
+    state.node_flow_items = list(state.node_flows.items())
+    node_flow_indexes = {state.node_flow_items[i][0]: i for i in range(len(state.node_flow_items))}
+
+    maximum_flow = math.log(max(state.node_flow_items, key=lambda x: x[1])[1])
 
     num_steps = 200
     update_frequency = int(len(state.node_flows) / num_steps)
 
-    for i in range(len(state.node_flows)):
-        node, flow = state.node_flows[i]
+    for i in range(len(state.node_flow_items)):
+        node, flow = state.node_flow_items[i]
         new_location = get_node_centerpoint(node)
+
+        for neighbour in state.graph[node]:
+            if node_flow_indexes[neighbour] > i:
+                neighbour_location = get_node_centerpoint(neighbour)
+                _draw_line(screen, new_location, neighbour_location, state)
+
         circle_center = [int(new_location[i] * state.float_pixel_size[i] + state.center_offset[i]) for i in (0, 1)]
         radius = int(circle_radius * max(1, math.log(flow) / 3))
         colour = [i * 255 for i in cm.gist_heat(math.log(flow) / maximum_flow)[:3]]

@@ -134,4 +134,4 @@ def simulate_flow(state):
             for neighbour, outflow_height in outflows:
                 node_flows[neighbour] += node_flows[node] * outflow_height / total_outflow_height
 
-        yield node, node_flows[node]
+    return node_flows, None
