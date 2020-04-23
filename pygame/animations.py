@@ -9,6 +9,8 @@ import heapq
 from functools import lru_cache
 from collections import defaultdict
 import math
+import numpy
+from PIL import Image
 
 
 @lru_cache(maxsize=10000)
@@ -619,23 +621,31 @@ def animate_flow(screen, state: VisState, settings: VisSettings) -> Generator:
                 neighbour_location = get_node_centerpoint(neighbour)
                 _draw_line(state.edges_surface, new_location, neighbour_location, state)
 
-    state.resized_selected_surface.set_alpha(255)
-    screen.blit(state.resized_selected_surface, (0, 0))
-    screen.blit(state.edges_surface, (0, 0))
+    height_array = state.selected_area_height_map - state.selected_area_height_map.min()
+    height_array = (height_array // (height_array.max() / 255)).astype("int32")
+    image = Image.fromarray(numpy.uint8(cm.gist_earth(height_array) * 255))
+    pygame_img = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
+    pygame_img = pygame.transform.scale(
+        pygame_img, [int(pygame_img.get_rect().size[i] * state.float_pixel_size[i]) for i in (0, 1)]
+    )
+
+    screen.blit(pygame_img, (0, 0))
     yield
 
-    node_flows = list(simulate_flow(state))
-    maximum_flow = math.log(max(node_flows, key=lambda x:x[1])[1])
+    state.node_flows = list(simulate_flow(state))
+    maximum_flow = math.log(max(state.node_flows, key=lambda x: x[1])[1])
 
-    for node, flow in node_flows:
+    for node, flow in state.node_flows:
         new_location = get_node_centerpoint(node)
-        pygame.draw.circle(
-            screen,
-            [i * 255 for i in cm.hot(math.log(flow) / maximum_flow)[:3]],
-            (
-                int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
-                int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
-            ),
-            int(circle_radius * max(1, math.log(flow)/3)),
+        circle_center = (
+            int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
+            int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
         )
-        yield
+        radius = int(circle_radius * max(1, math.log(flow) / 3))
+        pygame.draw.circle(
+            screen, [i * 255 for i in cm.gist_heat(math.log(flow) / maximum_flow)[:3]], circle_center, radius
+        )
+
+        diameter=radius*2
+        update_rect = (circle_center[0] - diameter/2, circle_center[1] - diameter/2, diameter, diameter)
+        yield update_rect

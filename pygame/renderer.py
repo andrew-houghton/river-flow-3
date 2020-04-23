@@ -54,8 +54,11 @@ class VisRenderer:
         while self.state.running:
             if self.state.within_transition:
                 try:
-                    next(frame_generator)
-                    pygame.display.flip()
+                    update_rect = next(frame_generator)
+                    if update_rect:
+                        pygame.display.update(pygame.Rect(update_rect))
+                    else:
+                        pygame.display.flip()
                     self.clock.tick(self.settings.framerate)
                     self.handle_events()
                 except StopIteration:

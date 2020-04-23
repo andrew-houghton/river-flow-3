@@ -119,7 +119,7 @@ def simulate_flow(state):
     node_flows = defaultdict(float)
 
     for node in sorted(state.graph, key=get_height_by_key, reverse=True):
-        node_flows[node] += 1
+        node_flows[node] += len(node)
         node_height = get_height_by_key(node)
 
         if not any(does_node_touch_border(i) for i in node):
