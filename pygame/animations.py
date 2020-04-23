@@ -630,22 +630,21 @@ def animate_flow(screen, state: VisState, settings: VisSettings) -> Generator:
     )
 
     screen.blit(pygame_img, (0, 0))
-    yield
 
     state.node_flows = list(simulate_flow(state))
     maximum_flow = math.log(max(state.node_flows, key=lambda x: x[1])[1])
 
-    for node, flow in state.node_flows:
-        new_location = get_node_centerpoint(node)
-        circle_center = (
-            int(new_location[0] * state.float_pixel_size[0] + state.center_offset[0]),
-            int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
-        )
-        radius = int(circle_radius * max(1, math.log(flow) / 3))
-        pygame.draw.circle(
-            screen, [i * 255 for i in cm.gist_heat(math.log(flow) / maximum_flow)[:3]], circle_center, radius
-        )
+    num_steps = 200
+    update_frequency = int(len(state.node_flows) / num_steps)
 
-        diameter=radius*2
-        update_rect = (circle_center[0] - diameter/2, circle_center[1] - diameter/2, diameter, diameter)
-        yield update_rect
+    for i in range(len(state.node_flows)):
+        node, flow = state.node_flows[i]
+        new_location = get_node_centerpoint(node)
+        circle_center = [int(new_location[i] * state.float_pixel_size[i] + state.center_offset[i]) for i in (0, 1)]
+        radius = int(circle_radius * max(1, math.log(flow) / 3))
+        colour = [i * 255 for i in cm.gist_heat(math.log(flow) / maximum_flow)[:3]]
+        pygame.draw.circle(screen, colour, circle_center, radius)
+
+        if i % update_frequency == 0:
+            yield
+    yield
