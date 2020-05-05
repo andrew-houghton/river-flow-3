@@ -15,6 +15,7 @@ from animations import (
     flood_points,
     animate_watershed,
     animate_flow,
+    animate_continous_flow,
 )
 from line_profiler import LineProfiler
 
@@ -42,7 +43,8 @@ class VisRenderer:
             highlight_low_nodes,
             flood_points,
             # animate_watershed,
-            animate_flow,
+            # animate_flow,
+            animate_continous_flow,
         ]
 
         # lp = LineProfiler()
