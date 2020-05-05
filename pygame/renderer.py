@@ -13,6 +13,7 @@ from animations import (
     merge_equal_height_nodes,
     highlight_low_nodes,
     flood_points,
+    animate_watershed,
     animate_flow,
 )
 from line_profiler import LineProfiler
@@ -40,6 +41,7 @@ class VisRenderer:
             merge_equal_height_nodes,
             highlight_low_nodes,
             flood_points,
+            # animate_watershed,
             animate_flow,
         ]
 
