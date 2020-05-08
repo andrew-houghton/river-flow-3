@@ -6,7 +6,7 @@ from vis_dataclasses import VisState, VisSettings
 from animations import (
     starting_image,
     true_colour_to_height_map,
-    display_selection_polygon,
+    random_selection_polygon,
     scale_up_selection,
     add_circles,
     add_edges,
@@ -18,6 +18,7 @@ from animations import (
     animate_continous_flow,
 )
 from line_profiler import LineProfiler
+from actions import show_selection_polygon
 
 
 class VisRenderer:
@@ -34,8 +35,8 @@ class VisRenderer:
 
         self.animation_generators = [
             (starting_image, None),
-            (true_colour_to_height_map, None),
-            (display_selection_polygon, None),
+            (true_colour_to_height_map, show_selection_polygon),
+            (random_selection_polygon, None),
             (scale_up_selection, None),
             (add_circles, None),
             (add_edges, None),
@@ -81,13 +82,9 @@ class VisRenderer:
                 self.state.running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT and not self.state.within_transition:
                 return self.next_animation()
-            # elif event.type == pygame.MOUSEBUTTONDOWN:
-            #     self.state.click_location_1 = pygame.mouse.get_pos()
-            # elif event.type == pygame.MOUSEBUTTONUP:
-            #     self.state.click_location_2 = pygame.mouse.get_pos()
             elif action_processor is not None:
                 return action_processor(event, self.screen, self.state, self.settings), action_processor
-        return None, None
+        return None, action_processor
 
 if __name__ == "__main__":
     VisRenderer()
