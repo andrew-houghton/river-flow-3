@@ -28,47 +28,44 @@ class VisRenderer:
         self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
         self.state = VisState(running=True, within_transition=True)
 
-        screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
+        self.screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
         # screen = pygame.display.set_mode(self.settings.screen_size)
         self.clock = pygame.time.Clock()
 
         self.animation_generators = [
-            starting_image,
-            true_colour_to_height_map,
-            display_selection_polygon,
-            scale_up_selection,
-            add_circles,
-            add_edges,
-            merge_equal_height_nodes,
-            highlight_low_nodes,
-            flood_points,
-            # animate_watershed,
-            # animate_flow,
-            animate_continous_flow,
+            (starting_image, None),
+            (true_colour_to_height_map, None),
+            (display_selection_polygon, None),
+            (scale_up_selection, None),
+            (add_circles, None),
+            (add_edges, None),
+            (merge_equal_height_nodes, None),
+            (highlight_low_nodes, None),
+            (flood_points, None),
+            # (animate_watershed, None),
+            # (animate_flow, None),
+            (animate_continous_flow, None),
         ]
 
         # lp = LineProfiler()
         # self.animations = [lp(gen)(screen, self.state, self.settings) for gen in self.animation_generators]
-        self.animations = [gen(screen, self.state, self.settings) for gen in self.animation_generators]
+        self.animations = [(gen(self.screen, self.state, self.settings), action_processor) for gen, action_processor in self.animation_generators]
         self.main_loop()
         # lp.print_stats()
 
     def main_loop(self):
-        frame_generator = self.next_animation()
+        frame_generator, action_processor = self.next_animation()
         while self.state.running:
             if self.state.within_transition:
                 try:
-                    update_rect = next(frame_generator)
-                    if update_rect:
-                        pygame.display.update(pygame.Rect(update_rect))
-                    else:
-                        pygame.display.flip()
+                    next(frame_generator)
+                    pygame.display.flip()
                     self.clock.tick(self.settings.framerate)
                     self.handle_events()
                 except StopIteration:
                     self.state.within_transition = False
             else:
-                frame_generator = self.handle_events()
+                frame_generator, action_processor = self.handle_events(action_processor)
                 if frame_generator:
                     self.state.within_transition = True
 
@@ -78,17 +75,19 @@ class VisRenderer:
         except IndexError:
             self.state.running = False
 
-    def handle_events(self):
+    def handle_events(self, action_processor=None):
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 self.state.running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT and not self.state.within_transition:
                 return self.next_animation()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.state.click_location_1 = pygame.mouse.get_pos()
-            elif event.type == pygame.MOUSEBUTTONUP:
-                self.state.click_location_2 = pygame.mouse.get_pos()
-
+            # elif event.type == pygame.MOUSEBUTTONDOWN:
+            #     self.state.click_location_1 = pygame.mouse.get_pos()
+            # elif event.type == pygame.MOUSEBUTTONUP:
+            #     self.state.click_location_2 = pygame.mouse.get_pos()
+            elif action_processor is not None:
+                return action_processor(event, self.screen, self.state, self.settings), action_processor
+        return None, None
 
 if __name__ == "__main__":
     VisRenderer()
