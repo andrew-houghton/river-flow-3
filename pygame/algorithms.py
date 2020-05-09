@@ -73,28 +73,28 @@ def create_graph(node_merge_operations, skip_nodes, non_skip_nodes, state):
     return dict(graph)
 
 
-def find_low_nodes(graph, state):
-    def get_height_by_key(key):
-        return state.selected_area_height_map[key[0][1], key[0][0]]
+def get_height_by_key(key, state):
+    return state.selected_area_height_map[key[0][1], key[0][0]]
+def does_node_touch_border(node, state):
+    if node[0] == 0:
+        return True
+    if node[1] == 0:
+        return True
+    if node[0] == state.selection_pixel_size[0] - 1:
+        return True
+    if node[1] == state.selection_pixel_size[1] - 1:
+        return True
+    return False
 
-    def does_node_touch_border(node):
-        if node[0] == 0:
-            return True
-        if node[1] == 0:
-            return True
-        if node[0] == state.selection_pixel_size[0] - 1:
-            return True
-        if node[1] == state.selection_pixel_size[1] - 1:
-            return True
-        return False
+def find_low_nodes(graph, state):
 
     low_nodes = []
     for node_key, adjacent_nodes in graph.items():
-        if any(does_node_touch_border(node) for node in node_key):
+        if any(does_node_touch_border(node, state) for node in node_key):
             continue
-        height = get_height_by_key(node_key)
+        height = get_height_by_key(node_key, state)
         for adjacent_node_key in adjacent_nodes:
-            if height > get_height_by_key(adjacent_node_key):
+            if height > get_height_by_key(adjacent_node_key, state):
                 break
         else:
             low_nodes.append(node_key)
@@ -102,33 +102,18 @@ def find_low_nodes(graph, state):
 
 
 def calculate_watershed(state, source=None):
-    def get_height_by_key(key):
-        return state.selected_area_height_map[key[0][1], key[0][0]]
-
-    def does_node_touch_border(node):
-        if node[0] == 0:
-            return True
-        if node[1] == 0:
-            return True
-        if node[0] == state.selection_pixel_size[0] - 1:
-            return True
-        if node[1] == state.selection_pixel_size[1] - 1:
-            return True
-        return False
-
     node_flows = defaultdict(float)
-
     node_flows[source] = 1
 
-    for node in sorted(state.graph, key=get_height_by_key, reverse=True):
+    for node in sorted(state.graph, key=lambda node: get_height_by_key(node, state), reverse=True):
         if node_flows[source] == 0:
             continue
 
-        node_height = get_height_by_key(node)
-        if not any(does_node_touch_border(i) for i in node):
+        node_height = get_height_by_key(node, state)
+        if not any(does_node_touch_border(i, state) for i in node):
             outflows = []
             for neighbour in state.graph[node]:
-                neighbour_height = get_height_by_key(neighbour)
+                neighbour_height = get_height_by_key(neighbour, state)
                 if neighbour_height < node_height:
                     outflows.append((neighbour, node_height - neighbour_height))
             assert outflows
@@ -139,69 +124,47 @@ def calculate_watershed(state, source=None):
 
     return node_flows, None
 
-def calculate_flow(state, num_cycles, source=None):
-    node_flows = {}
-    for node in state.graph:
-        node_flows[node] = len(node)
+def calculate_flow(state, num_cycles, source=None, continous=False):
+    node_flows = {source: 1}
     yield node_flows
 
-
-    def get_height_by_key(key):
-        return state.selected_area_height_map[key[0][1], key[0][0]]
-    def does_node_touch_border(node):
-        if node[0] == 0:
-            return True
-        if node[1] == 0:
-            return True
-        if node[0] == state.selection_pixel_size[0] - 1:
-            return True
-        if node[1] == state.selection_pixel_size[1] - 1:
-            return True
-        return False
-
-    sorted_nodes = sorted(state.graph, key=get_height_by_key)
     for i in range(num_cycles):
+        sorted_nodes = sorted(node_flows, key=lambda node: get_height_by_key(node, state))
         for node in sorted_nodes:
-            node_height = get_height_by_key(node)
-            if node_flows[node] != 0:
-                if not any(does_node_touch_border(i) for i in node):
-                    outflows = []
-                    for neighbour in state.graph[node]:
-                        neighbour_height = get_height_by_key(neighbour)
-                        if neighbour_height < node_height:
-                            outflows.append((neighbour, node_height - neighbour_height))
-                    assert outflows
+            node_height = get_height_by_key(node, state)
+            if not any(does_node_touch_border(i, state) for i in node):
+                outflows = []
+                for neighbour in state.graph[node]:
+                    neighbour_height = get_height_by_key(neighbour, state)
+                    if neighbour_height < node_height:
+                        outflows.append((neighbour, node_height - neighbour_height))
+                assert outflows
 
-                    total_outflow_height = sum(i[1] for i in outflows)
-                    for neighbour, outflow_height in outflows:
+                total_outflow_height = sum(i[1] for i in outflows)
+                for neighbour, outflow_height in outflows:
+                    if neighbour in node_flows:
                         node_flows[neighbour] += node_flows[node] * outflow_height / total_outflow_height
-                node_flows[node] = 0
+                    else:
+                        node_flows[neighbour] = node_flows[node] * outflow_height / total_outflow_height
+            del node_flows[node]
+            if not node_flows:
+                break
+        if continous:
+            node_flows[source] = 1
         yield node_flows
 
 def calculate_continuous_flow(state, num_cycles, source=None):
-    def get_height_by_key(key):
-        return state.selected_area_height_map[key[0][1], key[0][0]]
-    def does_node_touch_border(node):
-        if node[0] == 0:
-            return True
-        if node[1] == 0:
-            return True
-        if node[0] == state.selection_pixel_size[0] - 1:
-            return True
-        if node[1] == state.selection_pixel_size[1] - 1:
-            return True
-        return False
 
     node_flows = defaultdict(float)
-    sorted_nodes = sorted(state.graph, key=get_height_by_key)
+    sorted_nodes = sorted(state.graph, key=lambda node: get_height_by_key(node, state))
     for i in range(num_cycles):
         for node in sorted_nodes:
             node_flows[node] += len(node)
-            node_height = get_height_by_key(node)
-            if not any(does_node_touch_border(i) for i in node):
+            node_height = get_height_by_key(node, state)
+            if not any(does_node_touch_border(i, state) for i in node):
                 outflows = []
                 for neighbour in state.graph[node]:
-                    neighbour_height = get_height_by_key(neighbour)
+                    neighbour_height = get_height_by_key(neighbour, state)
                     if neighbour_height < node_height:
                         outflows.append((neighbour, node_height - neighbour_height))
                 assert outflows

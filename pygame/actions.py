@@ -104,23 +104,20 @@ def animate_flow(event, screen, state: VisState, settings: VisSettings) -> Gener
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
     source = find_clicked_node(pygame.mouse.get_pos(), state)
-
     circle_radius = int(max(*state.float_pixel_size) * 0.35)
     screen.blit(state.pygame_img, (0, 0))
     yield
 
-    edges_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
-    for node in state.graph:
-        new_location = get_node_centerpoint(node)
-        for neighbour in state.graph[node]:
-            if neighbour > node:
-                neighbour_location = get_node_centerpoint(neighbour)
-                _draw_line(edges_surface, new_location, neighbour_location, state)
+    for flows in calculate_flow(state, 200, source=source, continous=False):
+        # Draw edges between nodes
+        edges_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
+        for node in flows:
+            new_location = get_node_centerpoint(node)
+            for neighbour in state.graph[node]:
+                if neighbour > node and neighbour in flows:
+                    neighbour_location = get_node_centerpoint(neighbour)
+                    _draw_line(edges_surface, new_location, neighbour_location, state)
 
-    node_flows = list(i.copy() for i in calculate_flow(state, 200, source=source))
-
-    for flows in node_flows:
-        maximum_flow = max(flows.values())
         circles_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
         circle_drawn = False
         for node, flow in flows.items():
@@ -129,11 +126,11 @@ def animate_flow(event, screen, state: VisState, settings: VisSettings) -> Gener
                 circle_center = [
                     int(new_location[i] * state.float_pixel_size[i] + state.center_offset[i]) for i in (0, 1)
                 ]
-                colour = [i * 255 for i in cm.ocean(flow / maximum_flow)[:3]]
+                colour = [i * 255 for i in cm.ocean(flow)[:3]]
                 pygame.draw.circle(circles_surface, colour, circle_center, circle_radius)
                 circle_drawn = True
 
-        screen.blit(pygame_img, (0, 0))
+        screen.blit(state.pygame_img, (0, 0))
         screen.blit(edges_surface, (0, 0))
         screen.blit(circles_surface, (0, 0))
         yield

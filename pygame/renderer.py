@@ -42,9 +42,9 @@ class VisRenderer:
             (merge_equal_height_nodes, None),
             (highlight_low_nodes, None),
             (flood_points, None),
-            (show_only_heights, animate_watershed),
             (show_only_heights, animate_flow),
-            (show_only_heights, animate_continous_flow),
+            (show_only_heights, animate_flow),
+            (show_only_heights, animate_flow),
         ]
         self.main_loop()
 
