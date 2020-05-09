@@ -16,7 +16,7 @@ from animations import (
     show_only_heights,
 )
 from line_profiler import LineProfiler
-from actions import show_selection_polygon, animate_watershed, animate_flow, animate_continous_flow
+from actions import show_selection_polygon, animate_watershed, animate_flow
 
 
 class VisRenderer:
@@ -42,8 +42,7 @@ class VisRenderer:
             (merge_equal_height_nodes, None),
             (highlight_low_nodes, None),
             (flood_points, None),
-            (show_only_heights, animate_flow),
-            (show_only_heights, animate_flow),
+            (show_only_heights, animate_watershed),
             (show_only_heights, animate_flow),
         ]
         self.main_loop()

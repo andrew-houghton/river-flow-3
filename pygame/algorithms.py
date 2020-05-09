@@ -102,11 +102,14 @@ def find_low_nodes(graph, state):
 
 
 def calculate_watershed(state, source=None):
-    node_flows = defaultdict(float)
-    node_flows[source] = 1
+    if source:
+        node_flows = defaultdict(float)
+        node_flows[source] = 1
+    else:
+        node_flows = {key: len(key) for key in state.graph}
 
     for node in sorted(state.graph, key=lambda node: get_height_by_key(node, state), reverse=True):
-        if node_flows[source] == 0:
+        if source is not None and node_flows[source] == 0:
             continue
 
         node_height = get_height_by_key(node, state)
@@ -124,8 +127,12 @@ def calculate_watershed(state, source=None):
 
     return node_flows, None
 
-def calculate_flow(state, num_cycles, source=None, continous=False):
-    node_flows = {source: 1}
+def calculate_flow(state, num_cycles, source=None):
+    if source:
+        node_flows = {source: 1}
+    else:
+        node_flows = {key: len(key) for key in state.graph}
+
     yield node_flows
 
     for i in range(num_cycles):
@@ -149,27 +156,4 @@ def calculate_flow(state, num_cycles, source=None, continous=False):
             del node_flows[node]
             if not node_flows:
                 break
-        if continous:
-            node_flows[source] = 1
-        yield node_flows
-
-def calculate_continuous_flow(state, num_cycles, source=None):
-
-    node_flows = defaultdict(float)
-    sorted_nodes = sorted(state.graph, key=lambda node: get_height_by_key(node, state))
-    for i in range(num_cycles):
-        for node in sorted_nodes:
-            node_flows[node] += len(node)
-            node_height = get_height_by_key(node, state)
-            if not any(does_node_touch_border(i, state) for i in node):
-                outflows = []
-                for neighbour in state.graph[node]:
-                    neighbour_height = get_height_by_key(neighbour, state)
-                    if neighbour_height < node_height:
-                        outflows.append((neighbour, node_height - neighbour_height))
-                assert outflows
-
-                total_outflow_height = sum(i[1] for i in outflows)
-                for neighbour, outflow_height in outflows:
-                    node_flows[neighbour] += node_flows[node] * outflow_height / total_outflow_height
         yield node_flows
