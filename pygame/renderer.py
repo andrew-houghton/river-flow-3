@@ -13,18 +13,17 @@ from animations import (
     merge_equal_height_nodes,
     highlight_low_nodes,
     flood_points,
-    animate_watershed,
-    animate_flow,
-    animate_continous_flow,
+    show_only_heights,
 )
 from line_profiler import LineProfiler
-from actions import show_selection_polygon
+from actions import show_selection_polygon, animate_watershed, animate_flow, animate_continous_flow
 
 
 class VisRenderer:
     def __init__(self):
         pygame.init()
         infoObject = pygame.display.Info()
+        self.current_animation_index = -1
         # self.settings = VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
         self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
         self.state = VisState(running=True, within_transition=True)
@@ -33,7 +32,7 @@ class VisRenderer:
         # screen = pygame.display.set_mode(self.settings.screen_size)
         self.clock = pygame.time.Clock()
 
-        self.animation_generators = [
+        self.animations = [
             (starting_image, None),
             (true_colour_to_height_map, show_selection_polygon),
             (random_selection_polygon, None),
@@ -43,16 +42,11 @@ class VisRenderer:
             (merge_equal_height_nodes, None),
             (highlight_low_nodes, None),
             (flood_points, None),
-            # (animate_watershed, None),
-            # (animate_flow, None),
-            (animate_continous_flow, None),
+            (show_only_heights, animate_watershed),
+            (show_only_heights, animate_flow),
+            (show_only_heights, animate_continous_flow),
         ]
-
-        # lp = LineProfiler()
-        # self.animations = [lp(gen)(screen, self.state, self.settings) for gen in self.animation_generators]
-        self.animations = [(gen(self.screen, self.state, self.settings), action_processor) for gen, action_processor in self.animation_generators]
         self.main_loop()
-        # lp.print_stats()
 
     def main_loop(self):
         frame_generator, action_processor = self.next_animation()
@@ -71,10 +65,18 @@ class VisRenderer:
                     self.state.within_transition = True
 
     def next_animation(self):
-        try:
-            return self.animations.pop(0)
-        except IndexError:
-            self.state.running = False
+        if self.current_animation_index == len(self.animations) - 1:
+            return None, None
+        self.current_animation_index += 1
+        generator = self.animations[self.current_animation_index][0](self.screen, self.state, self.settings)
+        return generator, self.animations[self.current_animation_index][1]
+
+    def previous_animation(self):
+        if self.current_animation_index == 0:
+            return None, None
+        self.current_animation_index -= 1
+        generator = self.animations[self.current_animation_index][0](self.screen, self.state, self.settings)
+        return generator, self.animations[self.current_animation_index][1]
 
     def handle_events(self, action_processor=None):
         for event in pygame.event.get():
@@ -82,6 +84,8 @@ class VisRenderer:
                 self.state.running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT and not self.state.within_transition:
                 return self.next_animation()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT and not self.state.within_transition:
+                return self.previous_animation()
             elif action_processor is not None:
                 return action_processor(event, self.screen, self.state, self.settings), action_processor
         return None, action_processor
