@@ -64,46 +64,38 @@ def show_selection_polygon(event, screen, state: VisState, settings: VisSettings
         screen.blit(settings.screen_size_height_image, (0, 0))
         yield
 
+def manhattan_dist(a, b):
+    return sum(abs(i-j) for i, j in zip(a, b))
+
+def find_clicked_node(position, state):
+    scaled_location = list((position[i] - state.center_offset[i])/ state.float_pixel_size[i] for i in (0, 1))
+    return min(state.graph, key=lambda node: manhattan_dist(get_node_centerpoint(node), scaled_location))
 
 def animate_watershed(event, screen, state: VisState, settings: VisSettings) -> Generator:
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
-
+    source = find_clicked_node(pygame.mouse.get_pos(), state)
     circle_radius = int(max(*state.float_pixel_size) * 0.35)
-    height_array = state.selected_area_height_map - state.selected_area_height_map.min()
-    height_array = (height_array // (height_array.max() / 255)).astype("int32")
-    image = Image.fromarray(numpy.uint8(cm.gist_earth(height_array) * 255))
-    pygame_img = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
-    pygame_img = pygame.transform.scale(
-        pygame_img, [int(pygame_img.get_rect().size[i] * state.float_pixel_size[i]) for i in (0, 1)]
-    )
+    screen.blit(state.pygame_img, (0, 0))
 
-    screen.blit(pygame_img, (0, 0))
-
-    state.node_flows, state.edge_flows = calculate_watershed(state)
+    state.node_flows, state.edge_flows = calculate_watershed(state, source=source)
     state.node_flow_items = list(state.node_flows.items())
     node_flow_indexes = {state.node_flow_items[i][0]: i for i in range(len(state.node_flow_items))}
 
-    maximum_flow = math.log(max(state.node_flow_items, key=lambda x: x[1])[1])
-
-    num_steps = 200
-    update_frequency = int(len(state.node_flows) / num_steps)
-
     for i in range(len(state.node_flow_items)):
         node, flow = state.node_flow_items[i]
-        new_location = get_node_centerpoint(node)
+        if flow > 0.0001:
+            new_location = get_node_centerpoint(node)
 
-        for neighbour in state.graph[node]:
-            if node_flow_indexes[neighbour] > i:
-                neighbour_location = get_node_centerpoint(neighbour)
-                _draw_line(screen, new_location, neighbour_location, state)
+            for neighbour in state.graph[node]:
+                if neighbour in node_flow_indexes and node_flow_indexes[neighbour] > i:
+                    neighbour_location = get_node_centerpoint(neighbour)
+                    _draw_line(screen, new_location, neighbour_location, state)
 
-        circle_center = [int(new_location[i] * state.float_pixel_size[i] + state.center_offset[i]) for i in (0, 1)]
-        radius = int(circle_radius * max(1, math.log(flow) / 3))
-        colour = [i * 255 for i in cm.ocean(math.log(flow) / maximum_flow)[:3]]
-        pygame.draw.circle(screen, colour, circle_center, radius)
+            circle_center = [int(new_location[i] * state.float_pixel_size[i] + state.center_offset[i]) for i in (0, 1)]
+            colour = [i * 255 for i in cm.ocean(flow)[:3]]
+            pygame.draw.circle(screen, colour, circle_center, circle_radius)
 
-        if i % update_frequency == 0:
             yield
     yield
 
@@ -111,16 +103,10 @@ def animate_watershed(event, screen, state: VisState, settings: VisSettings) -> 
 def animate_flow(event, screen, state: VisState, settings: VisSettings) -> Generator:
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
+    source = find_clicked_node(pygame.mouse.get_pos(), state)
 
     circle_radius = int(max(*state.float_pixel_size) * 0.35)
-    height_array = state.selected_area_height_map - state.selected_area_height_map.min()
-    height_array = (height_array // (height_array.max() / 255)).astype("int32")
-    image = Image.fromarray(numpy.uint8(cm.gist_earth(height_array) * 255))
-    pygame_img = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
-    pygame_img = pygame.transform.scale(
-        pygame_img, [int(pygame_img.get_rect().size[i] * state.float_pixel_size[i]) for i in (0, 1)]
-    )
-    screen.blit(pygame_img, (0, 0))
+    screen.blit(state.pygame_img, (0, 0))
     yield
 
     edges_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
@@ -131,7 +117,7 @@ def animate_flow(event, screen, state: VisState, settings: VisSettings) -> Gener
                 neighbour_location = get_node_centerpoint(neighbour)
                 _draw_line(edges_surface, new_location, neighbour_location, state)
 
-    node_flows = list(i.copy() for i in calculate_flow(state, 200))
+    node_flows = list(i.copy() for i in calculate_flow(state, 200, source=source))
 
     for flows in node_flows:
         maximum_flow = max(flows.values())
@@ -159,16 +145,10 @@ def animate_flow(event, screen, state: VisState, settings: VisSettings) -> Gener
 def animate_continous_flow(event, screen, state: VisState, settings: VisSettings) -> Generator:
     if event.type != pygame.MOUSEBUTTONDOWN:
         return
+    source = find_clicked_node(pygame.mouse.get_pos(), state)
 
     circle_radius = int(max(*state.float_pixel_size) * 0.35)
-    height_array = state.selected_area_height_map - state.selected_area_height_map.min()
-    height_array = (height_array // (height_array.max() / 255)).astype("int32")
-    image = Image.fromarray(numpy.uint8(cm.gist_earth(height_array) * 255))
-    pygame_img = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
-    pygame_img = pygame.transform.scale(
-        pygame_img, [int(pygame_img.get_rect().size[i] * state.float_pixel_size[i]) for i in (0, 1)]
-    )
-    screen.blit(pygame_img, (0, 0))
+    screen.blit(state.pygame_img, (0, 0))
     yield
 
     edges_surface = pygame.Surface(settings.screen_size, pygame.SRCALPHA, 32).convert_alpha()
@@ -179,7 +159,7 @@ def animate_continous_flow(event, screen, state: VisState, settings: VisSettings
                 neighbour_location = get_node_centerpoint(neighbour)
                 _draw_line(edges_surface, new_location, neighbour_location, state)
 
-    node_flows = list(i.copy() for i in calculate_continuous_flow(state, 200))
+    node_flows = list(i.copy() for i in calculate_continuous_flow(state, 200, source=source))
 
     for flows in node_flows:
         maximum_flow = math.log(max(flows.values()))

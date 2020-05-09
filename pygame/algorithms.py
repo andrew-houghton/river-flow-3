@@ -101,7 +101,7 @@ def find_low_nodes(graph, state):
     return low_nodes
 
 
-def calculate_watershed(state):
+def calculate_watershed(state, source=None):
     def get_height_by_key(key):
         return state.selected_area_height_map[key[0][1], key[0][0]]
 
@@ -118,10 +118,13 @@ def calculate_watershed(state):
 
     node_flows = defaultdict(float)
 
-    for node in sorted(state.graph, key=get_height_by_key, reverse=True):
-        node_flows[node] += len(node)
-        node_height = get_height_by_key(node)
+    node_flows[source] = 1
 
+    for node in sorted(state.graph, key=get_height_by_key, reverse=True):
+        if node_flows[source] == 0:
+            continue
+
+        node_height = get_height_by_key(node)
         if not any(does_node_touch_border(i) for i in node):
             outflows = []
             for neighbour in state.graph[node]:
@@ -136,7 +139,7 @@ def calculate_watershed(state):
 
     return node_flows, None
 
-def calculate_flow(state, num_cycles):
+def calculate_flow(state, num_cycles, source=None):
     node_flows = {}
     for node in state.graph:
         node_flows[node] = len(node)
@@ -175,7 +178,7 @@ def calculate_flow(state, num_cycles):
                 node_flows[node] = 0
         yield node_flows
 
-def calculate_continuous_flow(state, num_cycles):
+def calculate_continuous_flow(state, num_cycles, source=None):
     def get_height_by_key(key):
         return state.selected_area_height_map[key[0][1], key[0][0]]
     def does_node_touch_border(node):

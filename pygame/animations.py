@@ -582,9 +582,9 @@ def show_only_heights(screen, state: VisState, settings: VisSettings) -> Generat
     height_array = state.selected_area_height_map - state.selected_area_height_map.min()
     height_array = (height_array // (height_array.max() / 255)).astype("int32")
     image = Image.fromarray(numpy.uint8(cm.gist_earth(height_array) * 255))
-    pygame_img = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
-    pygame_img = pygame.transform.scale(
-        pygame_img, [int(pygame_img.get_rect().size[i] * state.float_pixel_size[i]) for i in (0, 1)]
+    state.pygame_img = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
+    state.pygame_img = pygame.transform.scale(
+        state.pygame_img, [int(state.pygame_img.get_rect().size[i] * state.float_pixel_size[i]) for i in (0, 1)]
     )
-    screen.blit(pygame_img, (0, 0))
+    screen.blit(state.pygame_img, (0, 0))
     yield
