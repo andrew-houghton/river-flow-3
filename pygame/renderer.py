@@ -24,12 +24,12 @@ class VisRenderer:
         pygame.init()
         infoObject = pygame.display.Info()
         self.current_animation_index = -1
-        # self.settings = VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
-        self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
+        self.settings = VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
+        # self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
         self.state = VisState(running=True, within_transition=True)
 
-        self.screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
-        # screen = pygame.display.set_mode(self.settings.screen_size)
+        # self.screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
+        self.screen = pygame.display.set_mode(self.settings.screen_size)
         self.clock = pygame.time.Clock()
 
         self.animations = [

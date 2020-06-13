@@ -145,3 +145,23 @@ def animate_flow(event, screen, state: VisState, settings: VisSettings) -> Gener
 
         if not circle_drawn:
             break
+
+    save_graph(state)
+
+def save_graph(state):
+    def to_list_of_list(tuple_of_tuples):
+        return [list(i) for i in tuple_of_tuples]
+    
+    import json
+    from animations import get_height_by_key
+
+    data = []
+    for k, v in state.graph.items():
+        data.append({
+            'neighbours': [to_list_of_list(neighbour) for neighbour in v],
+            'key': to_list_of_list(k),
+            'height': int(get_height_by_key(k, state)),
+            'center': get_node_centerpoint(k),
+        })
+    json.dump(data, open("graph_data.json", "w"))
+    print("saved graph")
