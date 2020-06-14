@@ -1,16 +1,18 @@
+document.getElementById("loading").remove()
+
+// Initialize data structures
+
+
+// Create pixi app
 const app = new PIXI.Application({
     width: 800, height: 600, backgroundColor: 0x1099bb, resolution: window.devicePixelRatio || 1,
 });
 document.body.appendChild(app.view);
 
+// Create bunnies
 const container = new PIXI.Container();
-
 app.stage.addChild(container);
-
-// Create a new texture
 const texture = PIXI.Texture.from('bunny.png');
-
-// Create a 5x5 grid of bunnies
 for (let i = 0; i < 25; i++) {
     const bunny = new PIXI.Sprite(texture);
     bunny.anchor.set(0.5);
@@ -19,18 +21,15 @@ for (let i = 0; i < 25; i++) {
     container.addChild(bunny);
 }
 
-// Listen for animate update
+// Rotate bunnies on update
 app.ticker.add((delta) => {
-    // rotate the container!
-    // use delta to create frame-independent transform
-    container.rotation -= 0.01 * delta;
+    container.rotation += 0.001 * delta;
 });
 
+// Resize canvas on reload
 window.addEventListener('resize', resize);
 function resize() {
-    // Resize the renderer
     app.renderer.resize(window.innerWidth, window.innerHeight);
-  
     container.x = app.screen.width / 2;
     container.y = app.screen.height / 2;
     container.pivot.x = container.width / 2;
