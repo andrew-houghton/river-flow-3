@@ -7,3 +7,14 @@ body {
 canvas {
   display:block;
 }
+
+button#play {
+  width: 200px;
+  height: 30px;
+  border-radius: 15px;
+  position: absolute;
+  bottom: 0%;
+  left: 50%;
+  outline: none;
+  box-shadow: none;
+}

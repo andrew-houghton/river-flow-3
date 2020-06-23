@@ -101,11 +101,11 @@ function draw_objects() {
 }
 
 function update_colours() {
-    texture = create_circle_texture()
     for (let key in graph_sprites) {
         let sprite = graph_sprites[key];
         container.removeChild(sprite);
         sprite.tint = height_to_colour(graph_attributes[key].height);
+        sprite.tint = 0xFFFFFF * Math.random();
         container.addChild(sprite);
     }
 }
@@ -141,3 +141,13 @@ function height_to_colour(height) {
 }
 
 draw_objects();
+
+
+// Set flow for all nodes
+// Set colour for all nodes
+// Loop through in height order
+// Each time a nodes is processed update it's colour
+
+// Priority queue?
+// Also set that says which nodes are visited
+
