@@ -28,6 +28,19 @@ for (node of graph_data) {
 var grid_size;
 var circle_radius;
 
+// Create pixi app
+const app = new PIXI.Application({
+    backgroundColor: 0x000000,
+    resolution: window.devicePixelRatio || 1
+});
+document.body.appendChild(app.view);
+
+let line_container = new PIXI.ParticleContainer(num_links);
+app.stage.addChild(line_container);
+let container = new PIXI.ParticleContainer(graph_data.length);
+app.stage.addChild(container);
+
+window.addEventListener('resize', draw_objects);
 
 function find_circle_centerpoint(x, y) {
     return [
@@ -65,20 +78,6 @@ function draw_lines(container) {
     }
 }
 
-// Create pixi app
-const app = new PIXI.Application({
-    backgroundColor: 0x000000,
-    resolution: window.devicePixelRatio || 1
-});
-document.body.appendChild(app.view);
-
-let line_container = new PIXI.ParticleContainer(num_links);
-app.stage.addChild(line_container);
-let container = new PIXI.ParticleContainer(graph_data.length);
-app.stage.addChild(container);
-
-window.addEventListener('resize', draw_objects);
-
 function draw_line(x1, y1, x2, y2, thickness, texture) {
     let line_sprite = new PIXI.Sprite.from(texture);
     angle = get_angle(x1, x2, y1, y2);
@@ -100,8 +99,6 @@ function draw_objects() {
     draw_circles(create_circle_texture(), container)
     draw_lines(line_container)
 }
-draw_objects();
-// update_colours();
 
 function update_colours() {
     texture = create_circle_texture()
@@ -113,7 +110,6 @@ function update_colours() {
     }
 }
 
-// Utility function
 function create_circle_texture() {
     const p = new PIXI.Graphics();
     p.beginFill(0xFFFFFF);
@@ -143,3 +139,5 @@ function height_to_colour(height) {
     rgb = gist_earth[Math.floor((height - min_height) / (max_height - min_height) * 255)]
     return (rgb[0] << 16) + (rgb[1] << 8) + rgb[2];
 }
+
+draw_objects();
