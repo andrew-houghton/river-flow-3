@@ -5,6 +5,7 @@ var graph_neighbours = new Object();
 var graph_attributes = new Object();
 var graph_sprites = new Object();
 var graph_lines = new Object();
+var graph_flows = new Object();
 
 var max_x = 0;
 var max_y = 0;
@@ -25,6 +26,11 @@ for (node of graph_data) {
         key: node.key,
     };
 }
+sorted_keys = Object.keys(graph_attributes).sort(k => graph_attributes[k].height);
+for (key of sorted_keys) {
+    graph_flows[key]=1;
+}
+
 var grid_size;
 var circle_radius;
 
@@ -101,11 +107,25 @@ function draw_objects() {
 }
 
 function update_colours() {
-    for (let key in graph_sprites) {
+    for (key of sorted_keys) {
+        total_outflow_height = 0
+        for (neighbour of graph_neighbours[key]){
+            if (graph_attributes[key].height > graph_attributes[neighbour].height){
+                total_outflow_height += graph_attributes[key].height - graph_attributes[neighbour].height
+            }
+        }
+        for (neighbour of graph_neighbours[key]){
+            if (graph_attributes[key].height > graph_attributes[neighbour].height){
+                graph_flows[neighbour] += graph_flows[key] * (graph_attributes[key].height - graph_attributes[neighbour].height) / total_outflow_height
+            }
+        }
+        graph_flows[key] = 0;
+    }
+    max_flow = Math.log(Math.max(...Object.values(graph_flows)))
+    for (key of sorted_keys) {
         let sprite = graph_sprites[key];
         container.removeChild(sprite);
-        sprite.tint = height_to_colour(graph_attributes[key].height);
-        sprite.tint = 0xFFFFFF * Math.random();
+        sprite.tint = float_to_colour( Math.max(0, Math.log(graph_flows[key])) / max_flow);
         container.addChild(sprite);
     }
 }
@@ -137,6 +157,10 @@ function height_to_colour(height) {
         return 0x000000
     }
     rgb = gist_earth[Math.floor((height - min_height) / (max_height - min_height) * 255)]
+    return (rgb[0] << 16) + (rgb[1] << 8) + rgb[2];
+}
+function float_to_colour(value) {
+    rgb = gist_earth[Math.floor(value * 255)]
     return (rgb[0] << 16) + (rgb[1] << 8) + rgb[2];
 }
 
