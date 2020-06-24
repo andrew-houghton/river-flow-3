@@ -26,6 +26,8 @@ for (node of graph_data) {
         key: node.key,
     };
 }
+max_x += 1;
+max_y += 1;
 sorted_keys = Object.keys(graph_attributes).sort(k => graph_attributes[k].height);
 for (key of sorted_keys) {
     graph_flows[key]=1;
