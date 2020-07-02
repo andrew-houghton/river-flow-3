@@ -5,7 +5,6 @@ var graph_neighbours = new Object();
 var graph_attributes = new Object();
 var graph_sprites = new Object();
 var graph_lines = new Object();
-var graph_flows = new Object();
 
 var max_x = 0;
 var max_y = 0;
@@ -28,10 +27,6 @@ for (node of graph_data) {
 }
 max_x += 1;
 max_y += 1;
-sorted_keys = Object.keys(graph_attributes).sort(k => graph_attributes[k].height);
-for (key of sorted_keys) {
-    graph_flows[key]=1;
-}
 
 var grid_size;
 var circle_radius;
@@ -69,8 +64,8 @@ function draw_circles(texture, container) {
     }
 }
 
-function get_angle(x1, x2, y1, y2){
-    return Math.atan2(y2-y1, x2-x1) - Math.PI/2;
+function get_angle(x1, x2, y1, y2) {
+    return Math.atan2(y2 - y1, x2 - x1) - Math.PI / 2;
 }
 
 function draw_lines(container) {
@@ -81,7 +76,7 @@ function draw_lines(container) {
             neighbour_node = graph_attributes[neighbour]
             center2 = find_circle_centerpoint(neighbour_node.center[0], neighbour_node.center[1]);
             sprite = draw_line(center[0], center[1], center2[0], center2[1], 2, texture)
-            graph_lines[node.key+">"+neighbour_node.key] = sprite;
+            graph_lines[node.key + ">" + neighbour_node.key] = sprite;
         }
     }
 }
@@ -92,7 +87,7 @@ function draw_line(x1, y1, x2, y2, thickness, texture) {
     line_sprite.x = x1 - Math.cos(angle) * thickness / 2;
     line_sprite.y = y1 - Math.sin(angle) * thickness / 2;
     line_sprite.scale.x = thickness;
-    line_sprite.scale.y = ((x1-x2)**2+(y1-y2)**2)**0.5;
+    line_sprite.scale.y = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5;
     line_sprite.rotation = angle;
     line_container.addChild(line_sprite);
     return line_sprite;
@@ -108,16 +103,33 @@ function draw_objects() {
     draw_lines(line_container)
 }
 
+// Flow simulation code:
+var graph_flows = new Object();
+function start_update_colours() {
+    sorted_keys = Object.keys(graph_attributes).sort(k => graph_attributes[k].height);
+    for (key of sorted_keys) {
+        graph_flows[key] = 1;
+    }
+    loop_update_colours()
+}
+
+function loop_update_colours() {
+    update_colours();
+    if (Math.max(...Object.values(graph_flows)) > 0) {
+        setTimeout(loop_update_colours, 0);
+    }
+}
+
 function update_colours() {
     for (key of sorted_keys) {
-        total_outflow_height = 0
-        for (neighbour of graph_neighbours[key]){
-            if (graph_attributes[key].height > graph_attributes[neighbour].height){
+        total_outflow_height = 0;
+        for (neighbour of graph_neighbours[key]) {
+            if (graph_attributes[key].height > graph_attributes[neighbour].height) {
                 total_outflow_height += graph_attributes[key].height - graph_attributes[neighbour].height
             }
         }
-        for (neighbour of graph_neighbours[key]){
-            if (graph_attributes[key].height > graph_attributes[neighbour].height){
+        for (neighbour of graph_neighbours[key]) {
+            if (graph_attributes[key].height > graph_attributes[neighbour].height) {
                 graph_flows[neighbour] += graph_flows[key] * (graph_attributes[key].height - graph_attributes[neighbour].height) / total_outflow_height
             }
         }
@@ -127,7 +139,7 @@ function update_colours() {
     for (key of sorted_keys) {
         let sprite = graph_sprites[key];
         container.removeChild(sprite);
-        sprite.tint = float_to_colour( Math.max(0, Math.log(graph_flows[key])) / max_flow);
+        sprite.tint = float_to_colour(Math.max(0, Math.log(graph_flows[key])) / max_flow);
         container.addChild(sprite);
     }
 }
@@ -155,25 +167,16 @@ function create_pixel_texture() {
 }
 
 function height_to_colour(height) {
-    if (max_height - min_height == 0){
+    if (max_height - min_height == 0) {
         return 0x000000
     }
     rgb = gist_earth[Math.floor((height - min_height) / (max_height - min_height) * 255)]
     return (rgb[0] << 16) + (rgb[1] << 8) + rgb[2];
 }
+
 function float_to_colour(value) {
     rgb = gist_earth[Math.floor(value * 255)]
     return (rgb[0] << 16) + (rgb[1] << 8) + rgb[2];
 }
 
 draw_objects();
-
-
-// Set flow for all nodes
-// Set colour for all nodes
-// Loop through in height order
-// Each time a nodes is processed update it's colour
-
-// Priority queue?
-// Also set that says which nodes are visited
-
