@@ -122,15 +122,32 @@ function loop_update_colours() {
 
 function update_colours() {
     for (key of sorted_keys) {
+        // There has gotta be a way to do this with fewer passes!
+        // Also stop recalculating height difference!
         total_outflow_height = 0;
+        largest_height_difference = 0;
         for (neighbour of graph_neighbours[key]) {
             if (graph_attributes[key].height > graph_attributes[neighbour].height) {
-                total_outflow_height += graph_attributes[key].height - graph_attributes[neighbour].height
+                height_difference = graph_attributes[key].height - graph_attributes[neighbour].height;
+                total_outflow_height += height_difference;
+                if (height_difference > largest_height_difference) {
+                    largest_height_difference = height_difference;
+                }
+            }
+        }
+        // Only send flow to nodes that have a significant amount of flow
+        // Significant means at least 10% of the flow going to the main outflow
+        active_total_height_difference = 0;
+        for (neighbour of graph_neighbours[key]) {
+            height_difference = graph_attributes[key].height - graph_attributes[neighbour].height;
+            if (height_difference > largest_height_difference/10){
+                active_total_height_difference += graph_attributes[key].height - graph_attributes[neighbour].height;
             }
         }
         for (neighbour of graph_neighbours[key]) {
-            if (graph_attributes[key].height > graph_attributes[neighbour].height) {
-                graph_flows[neighbour] += graph_flows[key] * (graph_attributes[key].height - graph_attributes[neighbour].height) / total_outflow_height
+            height_difference = graph_attributes[key].height - graph_attributes[neighbour].height;
+            if (height_difference > largest_height_difference/10){
+                graph_flows[neighbour] += graph_flows[key] * height_difference / active_total_height_difference
             }
         }
         graph_flows[key] = 0;
