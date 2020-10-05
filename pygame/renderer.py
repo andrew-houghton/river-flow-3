@@ -28,8 +28,9 @@ class VisRenderer:
         self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
         self.state = VisState(running=True, within_transition=True)
 
-        self.screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
-        # self.screen = pygame.display.set_mode(self.settings.screen_size)
+        self.render_surface = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
+        # self.render_surface = pygame.display.set_mode(self.settings.screen_size)
+        self.screen = self.render_surface.copy()
         self.clock = pygame.time.Clock()
 
         self.animations = [
@@ -59,9 +60,8 @@ class VisRenderer:
             if self.state.within_transition:
                 try:
                     next(frame_generator)
-                    self.screen.blit(self.title_text, (0,0))
-                    if self.subtitle_text:
-                        self.screen.blit(self.subtitle_text, (0,40))
+                    self.render_surface.blit(self.screen, (0, 0))
+                    self.render_surface.blit(self.text_surface, (0, 0))
                     pygame.display.flip()
                     self.clock.tick(self.settings.framerate)
                     self.handle_events()
@@ -80,6 +80,12 @@ class VisRenderer:
             self.subtitle_text = self.subtitle_font.render(subtitle_string, False, (255, 255, 255))
         else:
             self.subtitle_text = None
+
+        self.text_surface = pygame.Surface(self.settings.screen_size, pygame.SRCALPHA, 32)
+        self.text_surface = self.text_surface.convert_alpha()
+        self.text_surface.blit(self.title_text, (0,0))
+        if self.subtitle_text:
+            self.text_surface.blit(self.subtitle_text, (0,40))
 
     def next_animation(self):
         self.current_animation_index += 1
