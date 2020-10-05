@@ -33,18 +33,24 @@ class VisRenderer:
         self.clock = pygame.time.Clock()
 
         self.animations = [
-            (starting_image, None),
-            (true_colour_to_height_map, show_selection_polygon),
-            (random_selection_polygon, None),
-            (scale_up_selection, None),
-            (add_circles, None),
-            (add_edges, None),
-            (merge_equal_height_nodes, None),
-            (highlight_low_nodes, None),
-            (flood_points, None),
-            (show_only_heights, animate_watershed),
-            (show_only_heights, animate_flow),
+            (starting_image, None, "New Zealand", None),
+            (true_colour_to_height_map, show_selection_polygon, "Height map", "Click two corners to select an area"),
+            (random_selection_polygon, None, "Height map", None),
+            (scale_up_selection, None, "Selected area of height map", None),
+            (add_circles, None, "Height as points", "Each circle represents a physical point, colour indicates height"),
+            (add_edges, None, "Point graph", "Water can flow between points, this flow is represented by lines"),
+            (merge_equal_height_nodes, None, "Merge equal height points", "If multiple points next to each other are the same height they are merged"),
+            (highlight_low_nodes, None, "Low points", "Points below all adjacent points will flood if water is added"),
+            (flood_points, None, "Flooding", "Flood these points until there is a direction for water to flow out and down"),
+            (show_only_heights, animate_watershed, "Animation: Watershed", "Click somewhere"),
+            (show_only_heights, animate_flow, "Animation: Flow", "Click somewhere"),
         ]
+
+        pygame.font.init()
+        self.title_font = pygame.font.SysFont('tahoma', 48)
+        self.subtitle_font = pygame.font.SysFont('tahoma', 32)
+        self.title_text = None
+        self.subtitle_text = None
         self.main_loop()
 
     def main_loop(self):
@@ -53,6 +59,9 @@ class VisRenderer:
             if self.state.within_transition:
                 try:
                     next(frame_generator)
+                    self.screen.blit(self.title_text, (0,0))
+                    if self.subtitle_text:
+                        self.screen.blit(self.subtitle_text, (0,40))
                     pygame.display.flip()
                     self.clock.tick(self.settings.framerate)
                     self.handle_events()
@@ -63,8 +72,18 @@ class VisRenderer:
                 if frame_generator:
                     self.state.within_transition = True
 
+    def update_text(self):
+        title_string = self.animations[self.current_animation_index][2] 
+        subtitle_string = self.animations[self.current_animation_index][3]
+        self.title_text = self.title_font.render(title_string, False, (255, 255, 255))
+        if subtitle_string is not None:
+            self.subtitle_text = self.subtitle_font.render(subtitle_string, False, (255, 255, 255))
+        else:
+            self.subtitle_text = None
+
     def next_animation(self):
         self.current_animation_index += 1
+        self.update_text()
         generator = self.animations[self.current_animation_index][0](self.screen, self.state, self.settings)
         return generator, self.animations[self.current_animation_index][1]
 
@@ -72,6 +91,7 @@ class VisRenderer:
         if self.current_animation_index == 0:
             return None, None
         self.current_animation_index -= 1
+        self.update_text()
         generator = self.animations[self.current_animation_index][0](self.screen, self.state, self.settings)
         return generator, self.animations[self.current_animation_index][1]
 
