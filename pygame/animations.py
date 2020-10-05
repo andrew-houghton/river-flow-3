@@ -311,6 +311,7 @@ def get_height_by_key(key, state):
 
 def highlight_low_nodes(screen, state: VisState, settings: VisSettings) -> Generator:
     circle_radius = int(max(*state.float_pixel_size) * 0.37)
+    print(f"circle_radius = {circle_radius}")
 
     state.low_nodes = find_low_nodes(state.graph, state)
     print(f"Found {len(state.low_nodes)} low nodes")
@@ -325,7 +326,7 @@ def highlight_low_nodes(screen, state: VisState, settings: VisSettings) -> Gener
                 int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
             ),
             circle_radius,
-            3,
+            min(circle_radius, 3),
         )
     state.low_nodes = sorted(state.low_nodes, key=lambda key: get_height_by_key(key, state))
     yield
@@ -386,7 +387,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                         int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
                     ),
                     circle_radius,
-                    3,
+                    min(circle_radius, 3),
                 )
                 break
             lake_height = node_height
@@ -402,7 +403,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                         int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
                     ),
                     circle_radius,
-                    3,
+                    min(circle_radius, 3),
                 )
                 break
 
@@ -414,7 +415,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                     int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
                 ),
                 circle_radius,
-                3,
+                min(circle_radius, 3),
             )
 
             for adjacent_node in state.graph[node]:
@@ -428,7 +429,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                             int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
                         ),
                         circle_radius,
-                        3,
+                        min(circle_radius, 3),
                     )
                     nodes_in_queue.add(adjacent_node)
                     heapq.heappush(queue, (get_height_by_key(adjacent_node, state), adjacent_node))
@@ -456,7 +457,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                         int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
                     ),
                     circle_radius,
-                    3,
+                    min(circle_radius, 3),
                 )
 
                 for adjacent_node in state.graph[node]:
@@ -470,7 +471,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                                 int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
                             ),
                             circle_radius,
-                            3,
+                            min(circle_radius, 3),
                         )
                         nodes_in_queue.add(adjacent_node)
                         heapq.heappush(queue, (get_height_by_key(adjacent_node, state), adjacent_node))
@@ -525,7 +526,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                         int(new_location[1] * state.float_pixel_size[1] + state.center_offset[1]),
                     ),
                     circle_radius,
-                    3,
+                    min(circle_radius, 3),
                 )
 
         num_steps = 10

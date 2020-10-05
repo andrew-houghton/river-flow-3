@@ -24,12 +24,12 @@ class VisRenderer:
         pygame.init()
         infoObject = pygame.display.Info()
         self.current_animation_index = -1
-        self.settings = VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
-        # self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
+        # self.settings = VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
+        self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
         self.state = VisState(running=True, within_transition=True)
 
-        # self.screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
-        self.screen = pygame.display.set_mode(self.settings.screen_size)
+        self.screen = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
+        # self.screen = pygame.display.set_mode(self.settings.screen_size)
         self.clock = pygame.time.Clock()
 
         self.animations = [
@@ -64,8 +64,6 @@ class VisRenderer:
                     self.state.within_transition = True
 
     def next_animation(self):
-        if self.current_animation_index == len(self.animations) - 1:
-            return None, None
         self.current_animation_index += 1
         generator = self.animations[self.current_animation_index][0](self.screen, self.state, self.settings)
         return generator, self.animations[self.current_animation_index][1]
@@ -82,6 +80,8 @@ class VisRenderer:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 self.state.running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT and not self.state.within_transition:
+                if self.current_animation_index == len(self.animations) - 1:
+                    return None, action_processor
                 return self.next_animation()
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT and not self.state.within_transition:
                 return self.previous_animation()
