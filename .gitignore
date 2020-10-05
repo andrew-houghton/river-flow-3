@@ -132,3 +132,5 @@ dmypy.json
 
 data/LC*
 data/*.xcf
+data/new_dataset
+data/dataset_stitching
