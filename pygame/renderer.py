@@ -24,11 +24,13 @@ class VisRenderer:
         pygame.init()
         infoObject = pygame.display.Info()
         self.current_animation_index = -1
-        # self.settings = VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
-        self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
-
-        self.render_surface = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
-        # self.render_surface = pygame.display.set_mode(self.settings.screen_size)
+        fullscreen_mode = True
+        if fullscreen_mode:
+            self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
+            self.render_surface = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
+        else:
+            self.settings = VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
+            self.render_surface = pygame.display.set_mode(self.settings.screen_size)
 
         self.state = VisState(running=True, within_transition=True)
         self.screen = self.render_surface.copy()
@@ -86,7 +88,7 @@ class VisRenderer:
         self.text_surface = self.text_surface.convert_alpha()
         self.text_surface.blit(self.title_text, (0,0))
         if self.subtitle_text:
-            self.text_surface.blit(self.subtitle_text, (0,40))
+            self.text_surface.blit(self.subtitle_text, (0,60))
 
     def next_animation(self):
         self.current_animation_index += 1
