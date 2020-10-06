@@ -5,19 +5,29 @@ import numpy
 from PIL import Image
 from pathlib import Path
 from typing import Tuple
+import gzip
 
 
-# matching_files = ("ASTGTMV003_S45E168_dem.tif", "true_colour_resized.jpg")
-matching_files = ("sentinel_master_subset.tif", "equal_area_aligned_images_natural.jpg")
+matching_files = ("ASTGTMV003_S45E168_dem.tif.gz", "true_colour_resized.jpg")
+# matching_files = ("sentinel_master_subset.tif.gz", "equal_area_aligned_images_natural.jpg")
+
+
+def load_image_file_zipped(filename):
+    file_path = Path(__file__).absolute().parent.parent.joinpath("data", filename)
+    unzipped_file_path = Path(__file__).absolute().parent.parent.joinpath("data", filename.replace('.gz', ""))
+    if filename.endswith(".gz") and not unzipped_file_path.exists():
+        with gzip.open(file_path, "rb") as f, open(unzipped_file_path, "wb") as outfile:
+            outfile.write(f.read())
+    return Image.open(unzipped_file_path)
 
 
 def load_heights():
-    im = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", matching_files[0]))
+    im = load_image_file_zipped(matching_files[0])
     return numpy.array(im)
 
 
 def load_true_colour():
-    im = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", matching_files[1]))
+    im = load_image_file_zipped(matching_files[1])
     return pygame.image.fromstring(im.tobytes(), im.size, im.mode)
 
 
