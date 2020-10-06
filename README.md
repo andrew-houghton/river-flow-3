@@ -34,3 +34,15 @@ Another attempt at writing the river flow algorithm focused on visualizations
 ### Screenshot
 
 ![Graph of links between places with different heights](doc/screenshot.png)
+
+### Height map image alignment (hard)
+
+1. Download sentinel tile.
+1. Download aster dem tile.
+1. Load both datasets in SNAP desktop. They should have enough info to load into the world view. If they don't fix up the source data.
+1. Resample the sentinel image. Raster > Geometric Operations > Resampling
+1. Colocate the images. Make sure the master is the sentinel image. Don't select nearest neighbour. Bicubic interpolation worked well last time.
+1. Subset the image (do this to crop the image and select only the elevation correct band).
+1. Export this as a GeoTiff.
+1. Go back to the sentinel tile. Create an RGB image (with sentinel RGB values) and then export view as image. This should give you accurate colours.
+1. If the images don't overlap correctly you will need to subset when you export probably.
