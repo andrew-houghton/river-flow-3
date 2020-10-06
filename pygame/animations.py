@@ -26,7 +26,7 @@ def starting_image(screen, state: VisState, settings: VisSettings) -> Generator:
 
 
 def true_colour_to_height_map(screen, state: VisState, settings: VisSettings) -> Generator:
-    num_steps = 10
+    num_steps = 40
     fading_out_image = settings.screen_size_true_colour.copy()
 
     for i in range(num_steps, 0, -1):
@@ -96,7 +96,7 @@ def scale_up_selection(screen, state: VisState, settings: VisSettings) -> Genera
         )
     )
 
-    num_steps = 10
+    num_steps = 100
 
     for i in range(num_steps + 1):
         # Smoothly transition the scale of the selected surface to cover the whole screen
@@ -154,7 +154,7 @@ def add_circles(screen, state: VisState, settings: VisSettings) -> Generator:
     _draw_circles(state.circles_surface, state, settings)
 
     # Remove background image
-    num_steps = 10
+    num_steps = 40
     state.resized_selected_surface = state.resized_selected_surface.convert()
     for i in range(num_steps, -1, -1):
         image_alpha = int(255 * i / num_steps)
@@ -257,7 +257,7 @@ def merge_equal_height_nodes(screen, state: VisState, settings: VisSettings) -> 
 
     _draw_circles(state.circles_surface, state, settings, skip_nodes, absolute_scale=False)
 
-    num_steps = 50
+    num_steps = 60
     circle_radius = int(max(*state.float_pixel_size) * 0.35)
     height_array = state.selected_area_height_map - state.selected_area_height_map.min()
     height_array = (height_array // (height_array.max() / 255)).astype("int32")
@@ -529,7 +529,7 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
                     min(circle_radius, 3),
                 )
 
-        num_steps = 10
+        num_steps = 60
         new_location = get_node_centerpoint(merged_node_key)
         for i in range(1, num_steps + 1):
             screen.fill((0, 0, 0))

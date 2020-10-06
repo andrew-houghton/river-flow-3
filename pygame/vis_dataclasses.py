@@ -7,13 +7,17 @@ from pathlib import Path
 from typing import Tuple
 
 
+# matching_files = ("ASTGTMV003_S45E168_dem.tif", "true_colour_resized.jpg")
+matching_files = ("sentinel_master_subset.tif", "equal_area_aligned_images_natural.jpg")
+
+
 def load_heights():
-    im = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", "ASTGTMV003_S45E168_dem.tif"))
+    im = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", matching_files[0]))
     return numpy.array(im)
 
 
 def load_true_colour():
-    image = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", "true_colour_resized.jpg"))
+    image = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", matching_files[1]))
     return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
 
 

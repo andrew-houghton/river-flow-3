@@ -134,3 +134,9 @@ data/LC*
 data/*.xcf
 data/new_dataset
 data/dataset_stitching
+data/sentinel_master_subset.data
+data/sentinel_master_subset.dim
+data/L1C_T58GGR_A016829_20200526T223829
+data/Collocation
+data/Landsat\ NZ\ area
+data/.comments
