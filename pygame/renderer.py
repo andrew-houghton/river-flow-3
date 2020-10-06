@@ -78,9 +78,9 @@ class VisRenderer:
     def update_text(self):
         title_string = self.animations[self.current_animation_index][2] 
         subtitle_string = self.animations[self.current_animation_index][3]
-        self.title_text = self.title_font.render(title_string, False, (255, 255, 255))
+        self.title_text = self.title_font.render(title_string, True, (255, 255, 255))
         if subtitle_string is not None:
-            self.subtitle_text = self.subtitle_font.render(subtitle_string, False, (255, 255, 255))
+            self.subtitle_text = self.subtitle_font.render(subtitle_string, True, (255, 255, 255))
         else:
             self.subtitle_text = None
 
