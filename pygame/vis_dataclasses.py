@@ -17,8 +17,8 @@ def load_heights():
 
 
 def load_true_colour():
-    image = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", matching_files[1]))
-    return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
+    im = Image.open(Path(__file__).absolute().parent.parent.joinpath("data", matching_files[1]))
+    return pygame.image.fromstring(im.tobytes(), im.size, im.mode)
 
 
 def height_map_to_image(height_map) -> pygame.Surface:
@@ -43,7 +43,7 @@ class VisSettings:
         self.height_map = load_heights()
         self.scale_ratio = max(
             screen_dimension / original_dimension
-            for screen_dimension, original_dimension in zip(self.screen_size, self.height_map.shape)
+            for screen_dimension, original_dimension in zip(reversed(self.screen_size), self.height_map.shape)
         )
         self.full_size_height_image = height_map_to_image(self.height_map)
         self.screen_size_height_image = crop(height_map_to_image(self.height_map), self.scale_ratio)
