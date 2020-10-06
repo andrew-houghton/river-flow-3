@@ -8,8 +8,8 @@ from typing import Tuple
 import gzip
 
 
-matching_files = ("ASTGTMV003_S45E168_dem.tif.gz", "true_colour_resized.jpg")
-# matching_files = ("sentinel_master_subset.tif.gz", "equal_area_aligned_images_natural.jpg")
+# matching_files = ("height_map_1.tif.gz", "true_colour_1.jpg")
+matching_files = ("height_map_2.tif.gz", "true_colour_2.jpg")
 
 
 def load_image_file_zipped(filename):
