@@ -12,28 +12,15 @@ Another attempt at writing the river flow algorithm focused on visualizations
 7. Creation of linked list
 8. Flow simulation
 
-### Detailed list of steps
-
-* Show NSW
-* Zoom to map and show heightmap
-* Select small area and zoom
-* Show only heightmap as grid of squares
-* Move squares apart and show linking lines
-* Show equal height nodes
-* 1 by 1 merge equal height nodes
-
 ### Instructions
 
 1. Create virtual environment `virtualenv -p python3.7 venv`
-2. Install required packages `pip install -r requirements.txt`
-3. `cd pygame`
-4. `python renderer.py`
-5. Press right arrow key to advance
-6. Press ESC at any time to exit
-
-### Screenshot
-
-![Graph of links between places with different heights](doc/screenshot.png)
+1. Install required packages `pip install -r requirements.txt`
+1. `cd pygame`
+1. `python renderer.py`
+1. Press right arrow key to advance
+1. During some steps use the mouse to interact
+1. Press ESC at any time to exit
 
 ### Height map image alignment (hard)
 
@@ -46,3 +33,7 @@ Another attempt at writing the river flow algorithm focused on visualizations
 1. Export this as a GeoTiff.
 1. Go back to the sentinel tile. Create an RGB image (with sentinel RGB values) and then export view as image. This should give you accurate colours.
 1. If the images don't overlap correctly you will need to subset when you export probably.
+
+### Screenshot
+
+![Graph of links between places with different heights](doc/screenshot.png)

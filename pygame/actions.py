@@ -1,3 +1,7 @@
+# This file is responsible for dealing with clicks/ other user input.
+# Each function responds to an event and returns a generator which updates state.screen
+# then yields to instruct the renderer to draw another frame.
+
 import pygame
 from vis_dataclasses import VisState, VisSettings
 from animations import _compute_selection_pixel_size, _draw_line, get_node_centerpoint
@@ -152,6 +156,7 @@ def animate_flow(event, screen, state: VisState, settings: VisSettings) -> Gener
 
 
 def save_graph(state):
+    # Helper function which saves graph in JSON format
     def to_list_of_list(tuple_of_tuples):
         return str([list(i) for i in tuple_of_tuples])
     

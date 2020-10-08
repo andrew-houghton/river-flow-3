@@ -1,3 +1,6 @@
+# This file holds the base algorithms which manipulate the graph and do flow simulation
+# It avoids dealing with UI and other concerns
+
 from functools import partial
 from collections import defaultdict
 
@@ -10,6 +13,10 @@ def check_nodes_equal_height(node_a, node_b, state, settings):
 
 
 def equal_height_node_merge(state, settings):
+    # If two nodes on the graph are the same height and adjacent then merge them into one node.
+    # The reason for this is to allow flow to cross large flat sections
+    # otherwise the water wouldn't know which wat to flow
+
     from animations import _get_adjacent_nodes
 
     node_merge_operations = []
@@ -75,6 +82,7 @@ def create_graph(node_merge_operations, skip_nodes, non_skip_nodes, state):
 
 def get_height_by_key(key, state):
     return state.selected_area_height_map[key[0][1], key[0][0]]
+
 def does_node_touch_border(node, state):
     if node[0] == 0:
         return True
@@ -87,6 +95,7 @@ def does_node_touch_border(node, state):
     return False
 
 def find_low_nodes(graph, state):
+
 
     low_nodes = []
     for node_key, adjacent_nodes in graph.items():

@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 import pygame
 from matplotlib import cm
+# Defines and initializes the data structures used
+# State holds mutable data, and data defined after the start
+# Settings holds data which is defined initially but does not change
+
 import numpy
 from PIL import Image
 from pathlib import Path

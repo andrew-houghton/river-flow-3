@@ -1,5 +1,8 @@
-import os
+# Controls the flow through the program
+# Responsible for managing control flow and data flow, and rendering frames
+# Defines which animations will run, and the order they run in
 
+import os
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame
 from vis_dataclasses import VisState, VisSettings

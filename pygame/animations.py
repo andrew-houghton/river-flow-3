@@ -1,3 +1,7 @@
+# This file is responsible for state transition animations
+# Each function runs when the user changes to the next screen
+# The function yields to instruct the renderer to draw another frame
+
 from vis_dataclasses import VisState, VisSettings
 from typing import Generator
 from random import randint
