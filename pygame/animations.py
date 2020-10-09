@@ -30,7 +30,7 @@ def starting_image(screen, state: VisState, settings: VisSettings) -> Generator:
 
 
 def true_colour_to_height_map(screen, state: VisState, settings: VisSettings) -> Generator:
-    num_steps = 40
+    num_steps = 5
     fading_out_image = settings.screen_size_true_colour.copy()
 
     for i in range(num_steps, 0, -1):
@@ -100,7 +100,7 @@ def scale_up_selection(screen, state: VisState, settings: VisSettings) -> Genera
         )
     )
 
-    num_steps = 100
+    num_steps = 5
 
     for i in range(num_steps + 1):
         # Smoothly transition the scale of the selected surface to cover the whole screen
@@ -581,9 +581,18 @@ def flood_points(screen, state: VisState, settings: VisSettings) -> Generator:
         for merging_node in merging_nodes:
             del state.graph[merging_node]
 
+def show_only_true_colour(screen, state: VisState, settings: VisSettings) -> Generator:
+    state.pygame_img = settings.image_loader_func(
+        state.points[0][0],
+        state.points[0][1],
+        state.points[2][0],
+        state.points[2][1],
+    )
+    state.pygame_img = pygame.transform.scale(state.pygame_img, settings.screen_size)
+    screen.blit(state.pygame_img, (0, 0))
+    yield
 
 def show_only_heights(screen, state: VisState, settings: VisSettings) -> Generator:
-    circle_radius = int(max(*state.float_pixel_size) * 0.35)
     height_array = state.selected_area_height_map - state.selected_area_height_map.min()
     height_array = (height_array // (height_array.max() / 255)).astype("int32")
     image = Image.fromarray(numpy.uint8(cm.gist_earth(height_array) * 255))

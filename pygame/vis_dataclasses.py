@@ -35,6 +35,11 @@ def load_true_colour():
     return pygame.image.fromstring(im.tobytes(), im.size, im.mode)
 
 
+def load_true_colour_region(*points):
+    im = load_image_file_zipped(matching_files[1]).crop(points)
+    return pygame.image.fromstring(im.tobytes(), im.size, im.mode)
+
+
 def height_map_to_image(height_map) -> pygame.Surface:
     image = Image.fromarray(numpy.uint8(cm.gist_earth(height_map / height_map.max()) * 255))
     return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
@@ -53,6 +58,7 @@ class VisSettings:
         selection_line_width: int = 3,
         selection_line_colour: Tuple[int, int, int] = (0, 204, 51),
     ):
+        print("Loading data...")
         self.screen_size = screen_size
         self.height_map = load_heights()
         self.scale_ratio = max(
@@ -60,12 +66,14 @@ class VisSettings:
             for screen_dimension, original_dimension in zip(reversed(self.screen_size), self.height_map.shape)
         )
         self.full_size_height_image = height_map_to_image(self.height_map)
+        self.image_loader_func = load_true_colour_region
         self.screen_size_height_image = crop(height_map_to_image(self.height_map), self.scale_ratio)
         self.screen_size_true_colour = crop(load_true_colour(), self.scale_ratio)
         self.framerate = framerate
         self.max_pixels = max_pixels
         self.selection_line_width = selection_line_width
         self.selection_line_colour = selection_line_colour
+        print("Finished loading.")
 
 
 @dataclass

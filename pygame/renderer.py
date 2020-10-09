@@ -16,6 +16,7 @@ from animations import (
     merge_equal_height_nodes,
     highlight_low_nodes,
     flood_points,
+    show_only_true_colour,
     show_only_heights,
 )
 from line_profiler import LineProfiler
@@ -49,7 +50,7 @@ class VisRenderer:
             (merge_equal_height_nodes, None, "Merge equal height points", "If multiple points next to each other are the same height they are merged"),
             (highlight_low_nodes, None, "Low points", "Points below all adjacent points will flood if water is added"),
             (flood_points, None, "Flooding", "Flood these points until there is a direction for water to flow out and down"),
-            (show_only_heights, animate_watershed, "Animation: Watershed", "Click somewhere"),
+            (show_only_true_colour, animate_watershed, "Animation: Watershed", "Click somewhere"),
             (show_only_heights, animate_flow, "Animation: Flow", "Click somewhere"),
         ]
 
