@@ -1,21 +1,22 @@
-from dataclasses import dataclass
-import pygame
-from matplotlib import cm
 # Defines and initializes the data structures used
 # State holds mutable data, and data defined after the start
 # Settings holds data which is defined initially but does not change
-
+from dataclasses import dataclass
+import pygame
+from matplotlib import cm
 import numpy
 from PIL import Image
 from pathlib import Path
 from typing import Tuple
 import gzip
+from functools import lru_cache
 
 
 # matching_files = ("height_map_1.tif.gz", "true_colour_1.jpg")
 matching_files = ("height_map_2.tif.gz", "true_colour_2.jpg")
 
 
+@lru_cache(maxsize=4)
 def load_image_file_zipped(filename):
     file_path = Path(__file__).absolute().parent.parent.joinpath("data", filename)
     unzipped_file_path = Path(__file__).absolute().parent.parent.joinpath("data", filename.replace('.gz', ""))
