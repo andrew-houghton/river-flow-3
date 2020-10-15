@@ -19,7 +19,6 @@ from animations import (
     show_only_true_colour,
     show_only_heights,
 )
-from line_profiler import LineProfiler
 from actions import show_selection_polygon, animate_watershed, animate_flow
 
 

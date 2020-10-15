@@ -37,3 +37,10 @@ Another attempt at writing the river flow algorithm focused on visualizations
 ### Screenshot
 
 ![Graph of links between places with different heights](doc/screenshot.png)
+
+### Image processing
+
+1. Download sentinel 2 tiles. Optimise for complete tiles (no black areas), time of day (no shadows), then cloud cover. Use the EarthExplorer website.
+1. Download dem files from Alaska Satellite Facility.
+1. Load all files in qgis. Use the merge tool to create two large tifs of the area selected. One 1hould be the height map and one should be the true colour image.
+1. Use the align raster tool to align the dem with the sentinel image. Make sure the images have the same pixel size, and same height/width afterwards. If required adjust the area bounds to make sure the height/width are correct.
