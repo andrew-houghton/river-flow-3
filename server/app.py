@@ -3,6 +3,7 @@ from PIL import Image
 from pathlib import Path
 import rasterio as rio
 from flask import send_file
+from flask import jsonify
 from random import randint
 import numpy as np
 import io
@@ -82,6 +83,21 @@ def height_image(width, height, left_offset, top_offset):
     pil_img.save(file_object, "PNG")
     file_object.seek(0)
     return send_file(file_object, mimetype="image/png")
+
+
+@app.route(
+    "/height/<int:width>/<int:height>",
+    defaults={"left_offset": None, "top_offset": None},
+)
+@app.route("/height/<int:width>/<int:height>/<int:left_offset>/<int:top_offset>")
+def height(width, height, left_offset, top_offset):
+    if left_offset is None:
+        left_offset = randint(0, CANVAS_WIDTH - width - 1)
+    if top_offset is None:
+        top_offset = randint(0, CANVAS_HEIGHT - height - 1)
+    w = rio.windows.Window(left_offset, top_offset, width, height)
+    height_values = heights_src.read(1, window=w)
+    return jsonify(height_values.tolist())
 
 
 if __name__ == "__main__":
