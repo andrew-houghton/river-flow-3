@@ -11,6 +11,8 @@ from typing import Tuple
 import gzip
 from functools import lru_cache
 
+Image.MAX_IMAGE_PIXELS = 1000000000  # Allow large images
+
 
 # matching_files = ("height_map_1.tif.gz", "true_colour_1.jpg")
 matching_files = ("height_map_2.tif.gz", "true_colour_2.jpg")

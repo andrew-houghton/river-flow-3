@@ -5,53 +5,57 @@
 import os
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 import pygame
-from vis_dataclasses import VisState, VisSettings
-from animations import (
-    starting_image,
-    true_colour_to_height_map,
-    random_selection_polygon,
-    scale_up_selection,
-    add_circles,
-    add_edges,
-    merge_equal_height_nodes,
-    highlight_low_nodes,
-    flood_points,
-    show_only_true_colour,
-    show_only_heights,
-)
-from actions import show_selection_polygon, animate_watershed, animate_flow
-
+import animations
+import flow_animations
+import actions
+import flow_actions
+import vis_dataclasses
+import flow_dataclasses
 
 class VisRenderer:
     def __init__(self):
         pygame.init()
         infoObject = pygame.display.Info()
         self.current_animation_index = -1
+
         fullscreen_mode = True
+        animation = "flow"
+
+        if animation == "algorithm":
+            dataclass_module = vis_dataclasses
+            self.animations = [
+                (animations.starting_image, None, "New Zealand", None),
+                (animations.true_colour_to_height_map, actions.show_selection_polygon, "Height map", "Click two corners to select an area"),
+                (animations.random_selection_polygon, None, "Height map", None),
+                (animations.scale_up_selection, None, "Selected area of height map", None),
+                (animations.add_circles, None, "Height as points", "Each circle represents a physical point, colour indicates height"),
+                (animations.add_edges, None, "Point graph", "Water can flow between points, this flow is represented by lines"),
+                (animations.merge_equal_height_nodes, None, "Merge equal height points", "If multiple points next to each other are the same height they are merged"),
+                (animations.highlight_low_nodes, None, "Low points", "Points below all adjacent points will flood if water is added"),
+                (animations.flood_points, None, "Flooding", "Flood these points until there is a direction for water to flow out and down"),
+                (animations.show_only_true_colour, actions.animate_watershed, "Animation: Watershed", "Click somewhere"),
+                (animations.show_only_heights, actions.animate_flow, "Animation: Flow", "Click somewhere"),
+            ]
+        else:
+            dataclass_module = flow_dataclasses
+            self.animations = [
+                (flow_animations.starting_image, flow_actions.show_selection_polygon, "Tasmania", "Click area of interest"),
+                # (flow_animations.scale_up_selection, None, "Selected area", None),
+                # (flow_animations.show_height_map, None, "Height map", None),
+                # (flow_animations.show_height_map_after_preprocessing, None, "After preprocessing", None),
+                # (flow_animations.watershed, None, "Watershed", None),
+            ]
+
         if fullscreen_mode:
-            self.settings = VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
+            self.settings = dataclass_module.VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
             self.render_surface = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
         else:
-            self.settings = VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
+            self.settings = dataclass_module.VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
             self.render_surface = pygame.display.set_mode(self.settings.screen_size)
 
-        self.state = VisState(running=True, within_transition=True)
+        self.state = dataclass_module.VisState(running=True, within_transition=True)
         self.screen = self.render_surface.copy()
         self.clock = pygame.time.Clock()
-
-        self.animations = [
-            (starting_image, None, "New Zealand", None),
-            (true_colour_to_height_map, show_selection_polygon, "Height map", "Click two corners to select an area"),
-            (random_selection_polygon, None, "Height map", None),
-            (scale_up_selection, None, "Selected area of height map", None),
-            (add_circles, None, "Height as points", "Each circle represents a physical point, colour indicates height"),
-            (add_edges, None, "Point graph", "Water can flow between points, this flow is represented by lines"),
-            (merge_equal_height_nodes, None, "Merge equal height points", "If multiple points next to each other are the same height they are merged"),
-            (highlight_low_nodes, None, "Low points", "Points below all adjacent points will flood if water is added"),
-            (flood_points, None, "Flooding", "Flood these points until there is a direction for water to flow out and down"),
-            (show_only_true_colour, animate_watershed, "Animation: Watershed", "Click somewhere"),
-            (show_only_heights, animate_flow, "Animation: Flow", "Click somewhere"),
-        ]
 
         pygame.font.init()
         self.title_font = pygame.font.SysFont('tahoma', 48)
