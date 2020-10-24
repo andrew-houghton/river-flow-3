@@ -9,7 +9,7 @@ def show_selection_polygon(event, screen, state, settings):
         )
         print(scaled_location)
 
-    # screen.blit(settings.screen_size_true_colour, (0, 0))
+    # screen.blit(settings.screen_size_true_colour, state.resized_image_position)
     # pygame.draw.polygon(
     #     screen,
     #     settings.selection_line_colour,

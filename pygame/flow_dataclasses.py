@@ -21,7 +21,7 @@ class VisSettings:
         print("Loading data...")
         self.screen_size = screen_size
         self.pil_colour_image = load_image_file_zipped(str(Path(__name__).absolute().parent.parent.joinpath("tasmania", "colour.tif")))
-        self.scale_ratio = max(
+        self.scale_ratio = min(
             screen_dimension / original_dimension
             for screen_dimension, original_dimension in zip(reversed(self.screen_size), self.pil_colour_image.size)
         )
@@ -41,3 +41,4 @@ class VisSettings:
 class VisState:
     running: bool = True
     within_transition: bool = True
+    resized_image_position: Tuple[int, int] = (0, 0)
