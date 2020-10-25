@@ -70,3 +70,5 @@ class VisState:
     running: bool = True
     within_transition: bool = True
     resized_image_position: Tuple[int, int] = (0, 0)
+    rectangle_bounds: Tuple = None
+    scaled_location: Tuple = None
