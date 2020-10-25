@@ -78,7 +78,6 @@ class VisSettings:
         self.selection_line_colour = selection_line_colour
         print("Finished loading.")
 
-
 @dataclass
 class VisState:
     running: bool = True

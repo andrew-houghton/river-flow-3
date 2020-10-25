@@ -40,7 +40,8 @@ class VisRenderer:
             dataclass_module = flow_dataclasses
             self.animations = [
                 (flow_animations.starting_image, flow_actions.show_selection_polygon, "Tasmania", "Click area of interest"),
-                # (flow_animations.scale_up_selection, None, "Selected area", None),
+                (flow_animations.show_selection, None, "Selected area", None),
+                (flow_animations.show_selection_height, None, "Selected area height", None),
                 # (flow_animations.show_height_map, None, "Height map", None),
                 # (flow_animations.show_height_map_after_preprocessing, None, "After preprocessing", None),
                 # (flow_animations.watershed, None, "Watershed", None),
