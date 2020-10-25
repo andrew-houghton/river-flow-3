@@ -6,8 +6,15 @@ from PIL import Image
 import pygame
 
 
-def pilImageToSurface(im):
+def pil_image_to_surface(im):
     return pygame.image.fromstring(im.tobytes(), im.size, im.mode)
+
+
+def calculate_scale_ratio(screen_size, image):
+    return min(
+        screen_dimension / original_dimension
+        for screen_dimension, original_dimension in zip(reversed(screen_size), image.size)
+    )
 
 
 class VisSettings:
@@ -21,17 +28,16 @@ class VisSettings:
         print("Loading data...")
         self.screen_size = screen_size
         self.pil_colour_image = load_image_file_zipped(str(Path(__name__).absolute().parent.parent.joinpath("tasmania", "colour.tif")))
-        self.scale_ratio = min(
-            screen_dimension / original_dimension
-            for screen_dimension, original_dimension in zip(reversed(self.screen_size), self.pil_colour_image.size)
-        )
-        resized_dimensions = (self.scale_ratio * self.pil_colour_image.size[0], self.scale_ratio* self.pil_colour_image.size[1])
-        print("Resizing image")
-        self.pil_colour_image.thumbnail(resized_dimensions, Image.ANTIALIAS)
-        print("Cropping image")
-        self.pil_colour_image.crop((0, 0, self.screen_size[0], self.screen_size[1]))
+        self.pil_small_colour_image = load_image_file_zipped(str(Path(__name__).absolute().parent.parent.joinpath("tasmania", "colour_small.png")))
 
-        self.pygame_colour_image = pilImageToSurface(self.pil_colour_image)
+        self.scale_ratio = calculate_scale_ratio(self.screen_size, self.pil_colour_image)
+        small_image_scale_ratio = calculate_scale_ratio(self.screen_size, self.pil_small_colour_image)
+
+        resized_dimensions = (small_image_scale_ratio * self.pil_small_colour_image.size[0], small_image_scale_ratio* self.pil_small_colour_image.size[1])
+        self.pil_small_colour_image.thumbnail(resized_dimensions, Image.ANTIALIAS)
+        self.pil_small_colour_image.crop((0, 0, self.screen_size[0], self.screen_size[1]))
+
+        self.pygame_colour_image = pil_image_to_surface(self.pil_small_colour_image)
         self.framerate = framerate
         self.selection_line_width = selection_line_width
         self.selection_line_colour = selection_line_colour
