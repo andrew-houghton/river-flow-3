@@ -3,6 +3,7 @@
 
 from functools import partial
 from collections import defaultdict
+import tqdm
 
 
 def check_nodes_equal_height(node_a, node_b, state, settings):
@@ -12,7 +13,7 @@ def check_nodes_equal_height(node_a, node_b, state, settings):
     )
 
 
-def equal_height_node_merge(state, settings):
+def equal_height_node_merge(state, settings, store_node_movements=True):
     # If two nodes on the graph are the same height and adjacent then merge them into one node.
     # The reason for this is to allow flow to cross large flat sections
     # otherwise the water wouldn't know which wat to flow
@@ -22,7 +23,7 @@ def equal_height_node_merge(state, settings):
     node_merge_operations = []
     skip_nodes = set()
     node_check_func = partial(check_nodes_equal_height, state=state, settings=settings)
-    for x in range(state.selection_pixel_size[0]):
+    for x in tqdm.tqdm(range(state.selection_pixel_size[0]), desc='Processing rows for equal height merge'):
         for y in range(state.selection_pixel_size[1]):
             if (x, y) not in skip_nodes:
                 height = settings.height_map[state.points[0][1] + y, state.points[0][0] + x]
@@ -38,6 +39,9 @@ def equal_height_node_merge(state, settings):
                     node_merge_operations.append(visited)
                     for node in visited:
                         skip_nodes.add(node)
+
+    if not store_node_movements:
+        return None, skip_nodes, node_merge_operations
 
     node_movements = {}
     for merging_nodes in node_merge_operations:
@@ -64,11 +68,12 @@ def create_graph(node_merge_operations, skip_nodes, non_skip_nodes, state):
 
     graph = defaultdict(list)
     new_key = {}
-    for merging_nodes in node_merge_operations:
+    for merging_nodes in tqdm.tqdm(node_merge_operations, desc='Creating new merged nodes'):
+        sorted_merging_nodes = tuple(sorted(merging_nodes))
         for node in merging_nodes:
-            new_key[node] = tuple(sorted(merging_nodes))
+            new_key[node] = sorted_merging_nodes
 
-    for node in sorted(list(skip_nodes) + non_skip_nodes):
+    for node in tqdm.tqdm(sorted(list(skip_nodes) + non_skip_nodes), desc='Processing other nodes'):
         node_key = new_key.get(node, (node,))
 
         adjacent_nodes = _get_adjacent_nodes(node, state)

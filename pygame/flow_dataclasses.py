@@ -62,6 +62,8 @@ class VisSettings:
                 im = Image.fromarray(loaded_data)
             else:
                 loaded_data = rio_src.read(1, window=w)
+                if mode=="numpy":
+                    return loaded_data
                 im = Image.fromarray(loaded_data).convert('RGB')
         return pil_image_to_surface(im)
 

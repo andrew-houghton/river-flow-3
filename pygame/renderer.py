@@ -19,7 +19,7 @@ class VisRenderer:
         self.current_animation_index = -1
 
         fullscreen_mode = True
-        animation = "flow"
+        animation = "algorithm"
 
         if animation == "algorithm":
             dataclass_module = vis_dataclasses
@@ -42,8 +42,9 @@ class VisRenderer:
                 (flow_animations.starting_image, flow_actions.show_selection_polygon, "Tasmania", "Click area of interest"),
                 (flow_animations.show_selection, None, "Selected area", None),
                 (flow_animations.show_selection_height, None, "Selected area height", None),
-                # (flow_animations.show_height_map, None, "Height map", None),
-                # (flow_animations.show_height_map_after_preprocessing, None, "After preprocessing", None),
+                (flow_animations.graph_construction_progress, None, "Graph construction", None),
+                # (flow_animations.node_merging_progress, None, "Equal height node merging", None),
+                # (flow_animations.flooding, None, "Equal height node merging", None),
                 # (flow_animations.watershed, None, "Watershed", None),
             ]
 
@@ -121,6 +122,8 @@ class VisRenderer:
                     return None, action_processor
                 return self.next_animation()
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT and not self.state.within_transition:
+                if self.current_animation_index == 0:
+                    return None, action_processor
                 return self.previous_animation()
             elif action_processor is not None:
                 return action_processor(event, self.screen, self.state, self.settings), action_processor
