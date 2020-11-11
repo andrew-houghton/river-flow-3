@@ -52,7 +52,7 @@ def graph_construction_progress(screen, state, settings):
     state.points = ((0, 0), (settings.screen_size[0], 0), (0, settings.screen_size[1]), (settings.screen_size[0], settings.screen_size[1]))
     yield
     
-    node_movements, skip_nodes, node_merge_operations = equal_height_node_merge(state, settings)
+    _, skip_nodes, node_merge_operations = equal_height_node_merge(state, settings)
     screen.fill((0,0,0))
     yield
 

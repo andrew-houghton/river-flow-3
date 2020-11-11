@@ -64,6 +64,8 @@ class VisSettings:
                 loaded_data = rio_src.read(1, window=w)
                 if mode=="numpy":
                     return loaded_data
+                loaded_data = loaded_data - loaded_data.min()
+                loaded_data = loaded_data // (loaded_data.max()/255)
                 im = Image.fromarray(loaded_data).convert('RGB')
         return pil_image_to_surface(im)
 

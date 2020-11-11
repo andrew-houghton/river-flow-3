@@ -18,8 +18,8 @@ class VisRenderer:
         infoObject = pygame.display.Info()
         self.current_animation_index = -1
 
-        fullscreen_mode = True
-        animation = "algorithm"
+        fullscreen_mode = False
+        animation = "fart"
 
         if animation == "algorithm":
             dataclass_module = vis_dataclasses
@@ -43,8 +43,6 @@ class VisRenderer:
                 (flow_animations.show_selection, None, "Selected area", None),
                 (flow_animations.show_selection_height, None, "Selected area height", None),
                 (flow_animations.graph_construction_progress, None, "Graph construction", None),
-                # (flow_animations.node_merging_progress, None, "Equal height node merging", None),
-                # (flow_animations.flooding, None, "Equal height node merging", None),
                 # (flow_animations.watershed, None, "Watershed", None),
             ]
 
