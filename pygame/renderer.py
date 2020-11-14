@@ -19,7 +19,8 @@ class VisRenderer:
         self.current_animation_index = -1
 
         fullscreen_mode = False
-        animation = "fart"
+        animation = "scale"
+        animation = "algorithm"
 
         if animation == "algorithm":
             dataclass_module = vis_dataclasses
@@ -43,14 +44,18 @@ class VisRenderer:
                 (flow_animations.show_selection, None, "Selected area", None),
                 (flow_animations.show_selection_height, None, "Selected area height", None),
                 (flow_animations.graph_construction_progress, None, "Graph construction", None),
-                # (flow_animations.watershed, None, "Watershed", None),
+                (flow_animations.show_only_heights, flow_actions.animate_watershed, "Watershed", None),
             ]
 
         if fullscreen_mode:
             self.settings = dataclass_module.VisSettings(screen_size=(infoObject.current_w, infoObject.current_h))
             self.render_surface = pygame.display.set_mode(self.settings.screen_size, pygame.FULLSCREEN)
         else:
-            self.settings = dataclass_module.VisSettings(screen_size=(infoObject.current_w // 2, infoObject.current_h // 2))
+            scale_factor = 4
+            self.settings = dataclass_module.VisSettings(screen_size=(
+                infoObject.current_w // scale_factor,
+                infoObject.current_h // scale_factor,
+            ))
             self.render_surface = pygame.display.set_mode(self.settings.screen_size)
 
         self.state = dataclass_module.VisState(running=True, within_transition=True)

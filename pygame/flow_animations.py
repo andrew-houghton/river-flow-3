@@ -4,6 +4,7 @@ from algorithms import equal_height_node_merge, create_graph, find_low_nodes
 import heapq
 from functools import lru_cache
 import tqdm
+from flow_dataclasses import write_greyscale_to_screen
 
 
 def starting_image(screen, state, settings):
@@ -50,11 +51,8 @@ def graph_construction_progress(screen, state, settings):
     settings.height_map = settings.get_image_window(state.scaled_location[0], state.scaled_location[1], mode="numpy")
     state.selected_area_height_map = settings.height_map
     state.points = ((0, 0), (settings.screen_size[0], 0), (0, settings.screen_size[1]), (settings.screen_size[0], settings.screen_size[1]))
-    yield
     
     _, skip_nodes, node_merge_operations = equal_height_node_merge(state, settings)
-    screen.fill((0,0,0))
-    yield
 
     non_skip_nodes = [
         (x, y)
@@ -64,13 +62,7 @@ def graph_construction_progress(screen, state, settings):
     ]
 
     state.graph = create_graph(node_merge_operations, skip_nodes, non_skip_nodes, state)
-    screen.fill((200,200,200))
-    yield
-
     state.low_nodes = sorted(find_low_nodes(state.graph, state), key=lambda key: get_height_by_key(key, state))
-    screen.fill((200,200,200))
-    yield
-
 
     def does_node_touch_border(node):
         if node[0] == 0:
@@ -82,7 +74,6 @@ def graph_construction_progress(screen, state, settings):
         if node[1] == state.selection_pixel_size[1] - 1:
             return True
         return False
-
 
     for low_node in tqdm.tqdm(state.low_nodes, desc='Processing low nodes'):
         if low_node not in state.graph:
@@ -157,6 +148,11 @@ def graph_construction_progress(screen, state, settings):
         for merging_node in merging_nodes:
             del state.graph[merging_node]
 
-    screen.fill((0,0,0))
+    write_greyscale_to_screen(screen, settings.height_map)
+    state.selected_area_height_map = settings.height_map
     print("done")
+    yield
+
+def show_only_heights(screen, state, settings):
+    write_greyscale_to_screen(screen, settings.height_map)
     yield

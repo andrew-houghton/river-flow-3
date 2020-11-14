@@ -12,6 +12,19 @@ def pil_image_to_surface(im):
     return pygame.image.fromstring(im.tobytes(), im.size, im.mode)
 
 
+def write_colour_to_screen(screen, array):
+    im = Image.fromarray(array)
+    screen.blit(pil_image_to_surface(im), (0,0))
+
+
+def write_greyscale_to_screen(screen, greyscale_data):
+    scaled_data = np.copy(greyscale_data)
+    scaled_data = scaled_data - scaled_data.min()
+    scaled_data = scaled_data // (scaled_data.max()/255)
+    im = Image.fromarray(scaled_data).convert('RGB')
+    screen.blit(pil_image_to_surface(im), (0,0))
+
+
 def calculate_scale_ratio(screen_size, image):
     return min(
         screen_dimension / original_dimension

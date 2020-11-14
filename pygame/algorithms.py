@@ -125,19 +125,26 @@ def calculate_watershed(state, source=None):
     for node in sorted(state.graph, key=lambda node: get_height_by_key(node, state), reverse=True):
         if source is not None and node_flows[source] == 0:
             continue
+        if node_flows[node] == 0:
+            continue
 
         node_height = get_height_by_key(node, state)
         if not any(does_node_touch_border(i, state) for i in node):
+
             outflows = []
             for neighbour in state.graph[node]:
                 neighbour_height = get_height_by_key(neighbour, state)
                 if neighbour_height < node_height:
                     outflows.append((neighbour, node_height - neighbour_height))
-            assert outflows
+            assert outflows, "Every node should have an outflow direction"
 
-            total_outflow_height = sum(i[1] for i in outflows)
+            # Only send flow in multiple directions if it's fairly even. Try to avoid tiny fractional flows
+            largest_outflow_height = max(i[1] for i in outflows)
+            outflow_height_threshold = largest_outflow_height / 2
+            total_outflow_height = sum(i[1] for i in outflows if i[1] > outflow_height_threshold)
             for neighbour, outflow_height in outflows:
-                node_flows[neighbour] += node_flows[node] * outflow_height / total_outflow_height
+                if outflow_height > outflow_height_threshold:
+                    node_flows[neighbour] += node_flows[node] * outflow_height / total_outflow_height
 
     return node_flows, None
 

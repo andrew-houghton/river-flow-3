@@ -1,4 +1,10 @@
 import pygame
+import numpy
+from matplotlib import cm
+from algorithms import calculate_watershed
+from flow_dataclasses import write_colour_to_screen
+from tqdm import tqdm
+
 
 def show_selection_polygon(event, screen, state, settings):
     if event.type == pygame.MOUSEBUTTONDOWN:
@@ -57,3 +63,36 @@ def show_selection_polygon(event, screen, state, settings):
             settings.selection_line_width,
         )
         yield
+
+
+def animate_watershed(event, screen, state, settings):
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        source = (pygame.mouse.get_pos(),)
+    elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+        source = None
+    else:
+        return
+
+    screen.fill((0,0,0))
+
+    state.node_flows, _ = calculate_watershed(state, source=source)
+    state.node_flow_items = list(state.node_flows.items())
+    numpy_image = numpy.zeros((settings.screen_size[1], settings.screen_size[0], 3), dtype=numpy.uint8)
+
+    print(f"Num pixels to process {len(state.node_flow_items)}")
+
+    for i in tqdm(range(len(state.node_flow_items)), desc="processing pixels"):
+        node, flow = state.node_flow_items[i]
+        colour = [int(i * 255) for i in cm.gist_heat(flow)[:3]]
+        # print(node)
+        # print(flow)
+        # print(colour)
+        for point in node:
+            numpy_image[point[1], point[0]] = colour
+        if i%20 == 0:
+            # print("Updating screen")
+            write_colour_to_screen(screen, numpy_image)
+            yield
+
+    write_colour_to_screen(screen, numpy_image)
+    yield
