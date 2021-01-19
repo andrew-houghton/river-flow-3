@@ -1,0 +1,42 @@
+row, col, = long, lat = 
+0, 0 = 144.6354031,-40.6266703 = 300000.22, 5500000.13
+0, 9996 = 145.81684626,-40.64482032 = 399960.32, 5499999.54
+9996, 0 = 144.60287870,-41.52632802 = 300000.24, 5400039.46
+9996, 9996 = 145.8006372,-41.5450839 = 399960.101, 5400039.965
+9996, 20976 = 147.1170797,-41.5512863 = 509764.064, 5400035.285
+20976, 9996 = 145.78186741,-42.53379254 = 399964.210, 5290237.441
+20976, 19968 = 146.9998177,-42.5402724 = 499981.37, 5290238.89
+
+EPSG: 32755
+
+WGS 84 / UTM zone 55S
+WKT
+PROJCS[
+    "WGS 84 / UTM zone 55S",
+    GEOGCS[
+        "WGS 84",
+        DATUM[
+            "WGS_1984",
+            SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],
+            AUTHORITY["EPSG","6326"]
+        ],
+        PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],
+        UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],
+        AUTHORITY["EPSG","4326"]
+    ],
+    PROJECTION["Transverse_Mercator"],
+    PARAMETER["latitude_of_origin",0],
+    PARAMETER["central_meridian",147],
+    PARAMETER["scale_factor",0.9996],
+    PARAMETER["false_easting",500000],
+    PARAMETER["false_northing",10000000],
+    UNIT["metre",1,AUTHORITY["EPSG","9001"]],
+    AXIS["Easting",EAST],
+    AXIS["Northing",NORTH],
+    AUTHORITY["EPSG","32755"]
+]
+
+Proj4
++proj=utm +zone=55 +south +datum=WGS84 +units=m +no_defs
+Extent
+144.00, -80.00, 150.00, 0.00
