@@ -3,7 +3,7 @@ import rasterio
 from pathlib import Path
 import rasterio as rio
 from matplotlib import pyplot
-from algorithms import convert_to_graph
+from algorithms import convert_to_graph, flood_low_points
 
 
 proj_string = "+proj=utm +zone=55 +south +datum=WGS84 +units=m +no_defs"
@@ -54,12 +54,13 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
     end_window_rowcol = apply_window_to_rowcol(window, end_rowcol)
 
     height_raster = get_raster(window)
-    pyplot.imshow(height_raster, cmap='winter')
-    pyplot.show()
-
+    # pyplot.imshow(height_raster, cmap='winter')
+    # pyplot.show()
     graph = convert_to_graph(height_raster)
-    graph = merge_equal_height(graph)
-    graph = flood_low_points(graph)
+    graph = flood_low_points(graph, height_raster)
+    # from pprint import pprint
+    # pprint(list(graph.keys())[0])
+    # pprint(list(graph.values())[0])
 
     # Starting from start_window_rowcol start tracing a path
     # If there is branching select the lower point
