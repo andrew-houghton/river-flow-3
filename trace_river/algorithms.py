@@ -86,7 +86,7 @@ def flood_low_points(graph, heights):
     if not low_nodes:
         return graph
 
-    for low_node in low_nodes:
+    for low_node in tqdm(low_nodes, desc="flooding low nodes"):
         if low_node not in graph:
             continue
 

@@ -80,14 +80,20 @@ def detect_edge_touch(shape, node, size_factors):
     return [sf * 1.5 if e else sf for e, sf in zip(enlarge, size_factors)]
 
 
-def show_plot(heights, start, end, path):
+def show_plot(heights, start, end, dest, path):
     plt.imshow(heights)
     for point in path:
         point = find_centerpoint(point)
         plt.plot(point[1], point[0], "go")
     plt.plot(start[1], start[0], "ro")
     plt.plot(end[1], end[0], "bo")
+    plt.plot(dest[1], dest[0], "yo")
     plt.show()
+
+
+def distance_closest_point(end, node_key):
+    node = min(node_key, key=lambda x: abs(end[0] - x[0]) + abs(end[1] - x[1]))
+    return node, abs(end[0] - node[0]) + abs(end[1] - node[1])
 
 
 def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_factors):
@@ -115,20 +121,20 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
 
     key_lookup = {k: key for key in graph.keys() for k in key}
     path = [key_lookup[start_window_rowcol]]
-    for i in range(300):
+    for i in range(2000):
         current_point = path[-1]
         next_points = graph[current_point]
         if len(next_points) == 0:
             size_factors = detect_edge_touch(
                 height_raster.shape, current_point, size_factors
             )
-            print(f"Rerunning with size factors {size_factors}")
-            show_plot(
-                height_raster,
-                start_window_rowcol,
-                find_centerpoint(current_point),
-                path,
-            )
+            print(f"Restarting with size factors {size_factors}")
+            # show_plot(
+            #     height_raster,
+            #     start_window_rowcol,
+            #     find_centerpoint(current_point),
+            #     path,
+            # )
             return enlarge_bounding_box_until_path_is_found(
                 start_rowcol, end_rowcol, size_factors
             )
@@ -138,7 +144,16 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
         )
         path.append(selected_point)
 
-    show_plot(height_raster, start_window_rowcol, end_window_rowcol, path)
+        close_point, distance = distance_closest_point(end_window_rowcol, selected_point)
+        print(distance)
+        if distance < 20:
+            break
+    else:
+        # Reached path length limit and gave up
+        return []
+
+    print("Solution found")
+    show_plot(height_raster, start_window_rowcol, end_window_rowcol, close_point, path)
     return path
 
 
@@ -167,6 +182,5 @@ def generate_bounding_box(start_rowcol, end_rowcol, size_factors):
 
 if __name__ == "__main__":
     start_point = (147.086086, -41.448218)
-    # end_point = (147.099627,-41.462158)
-    end_point = (147.122328, -41.443116)
+    end_point = (147.120220, -41.443814)
     start_finish_to_path(start_point, end_point)
