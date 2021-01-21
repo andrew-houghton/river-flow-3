@@ -3,3 +3,5 @@ Pillow
 pygame
 matplotlib
 rasterio
+pyproj
+tqdm
