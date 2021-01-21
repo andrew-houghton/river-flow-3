@@ -118,13 +118,13 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
                 height_raster.shape, current_point, size_factors
             )
             print(f"Restarting with size factors {size_factors}")
-            show_plot(
-                height_raster,
-                start_window_rowcol,
-                end_window_rowcol,
-                find_centerpoint(current_point),
-                path,
-            )
+            # show_plot(
+            #     height_raster,
+            #     start_window_rowcol,
+            #     end_window_rowcol,
+            #     find_centerpoint(current_point),
+            #     path,
+            # )
             return enlarge_bounding_box_until_path_is_found(
                 start_rowcol, end_rowcol, size_factors
             )
@@ -144,8 +144,8 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
         return []
 
     print(f"Solution found with {distance=}")
-    show_plot(height_raster, start_window_rowcol, end_window_rowcol, close_point, path)
-    return path
+    # show_plot(height_raster, start_window_rowcol, end_window_rowcol, close_point, path)
+    return path, height_raster
 
 
 def generate_bounding_box(start_rowcol, end_rowcol, size_factors):
@@ -178,7 +178,20 @@ def generate_bounding_box(start_rowcol, end_rowcol, size_factors):
     )
 
 
+def measure_distance(path):
+    path = [find_centerpoint(point) for point in path]
+    distance = 0
+    for point, next_point in zip(path, path[1:]):
+        distance += (
+            (point[0] - next_point[0]) ** 2 + (point[1] - next_point[1]) ** 2
+        ) ** 0.5
+    return distance * 10
+
+
 if __name__ == "__main__":
-    start_point = (-41.55327294639188, 145.87881557530164)  # lat lon
-    end_point = (-41.62953442116648, 145.7696457139196)  # lat lon
-    start_finish_to_path(start_point, end_point)
+    start_point = (-41.55327294639188, 145.87881557530164)  # Vale putin
+    end_point = (-41.62953442116648, 145.7696457139196)  # Vale takeout
+    # start_point = (-42.21404050624385, 145.91789407285435)  # Franklin putin
+    # end_point = (-42.285970802829496, 145.74782103623605)  # Franklin midway
+    path, heights = start_finish_to_path(start_point, end_point)
+    print(measure_distance(path))
