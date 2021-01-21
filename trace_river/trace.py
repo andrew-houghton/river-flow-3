@@ -144,7 +144,7 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
         return []
 
     print(f"Solution found with {distance=}")
-    # show_plot(height_raster, start_window_rowcol, end_window_rowcol, close_point, path)
+    show_plot(height_raster, start_window_rowcol, end_window_rowcol, close_point, path)
     return path, height_raster
 
 
@@ -185,8 +185,23 @@ def measure_distance(path):
         distance += (
             (point[0] - next_point[0]) ** 2 + (point[1] - next_point[1]) ** 2
         ) ** 0.5
-    return distance * 10
+    print(f"River distance {distance/100:.2f}km")
 
+def elevation_profile(path, heights):
+    distance = 0
+    x = [0]
+    y = [heights[path[0][0]]]
+    for point, next_point in zip(path, path[1:]):
+        centerpoint = find_centerpoint(point)
+        next_centerpoint = find_centerpoint(next_point)
+        distance += (
+            (centerpoint[0] - next_centerpoint[0]) ** 2 + (centerpoint[1] - next_centerpoint[1]) ** 2
+        ) ** 0.5
+        x.append(distance/100)  # Distance in km
+        y.append(heights[next_point[0]])
+    plt.plot(x, y)
+    plt.show()
+    print(f"Avg gradient {(max(y)-min(y))/(distance/100):.0f}m/km")
 
 if __name__ == "__main__":
     start_point = (-41.55327294639188, 145.87881557530164)  # Vale putin
@@ -194,4 +209,5 @@ if __name__ == "__main__":
     # start_point = (-42.21404050624385, 145.91789407285435)  # Franklin putin
     # end_point = (-42.285970802829496, 145.74782103623605)  # Franklin midway
     path, heights = start_finish_to_path(start_point, end_point)
-    print(measure_distance(path))
+    measure_distance(path)
+    elevation_profile(path, heights)
