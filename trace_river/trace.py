@@ -38,7 +38,7 @@ def start_finish_to_path(start_point, end_point):
 
     start_rowcol = lat_lon_to_row_col(*start_point)
     end_rowcol = lat_lon_to_row_col(*end_point)
-    size_factors = [1.2, 1.2, 1.2, 2]
+    size_factors = [1.2, 1.2, 1.2, 1.2]
     return enlarge_bounding_box_until_path_is_found(
         start_rowcol, end_rowcol, size_factors
     )
@@ -62,6 +62,28 @@ def find_centerpoint(node_key):
     y = sum(i[1] for i in node_key) / len(node_key)
     return x, y
 
+def detect_edge_touch(shape, node, size_factors):
+    enlarge = [False, False, False, False]
+    for point in node:
+        if point[0] == 0:
+            enlarge[1] = True
+        if point[1] == 0:
+            enlarge[0] = True
+        if point[0] >= shape[0] - 1:
+            enlarge[3] = True
+        if point[1] >= shape[1] - 1:
+            enlarge[2] = True
+    assert any(enlarge), "This condition should only happen when the path reaches an edge"
+    return [sf*1.5 if e else sf for e, sf in zip(enlarge, size_factors)]
+
+def show_plot(heights, start, end, path):
+    plt.imshow(heights)
+    for point in path:
+        point = find_centerpoint(point)
+        plt.plot(point[1], point[0], 'go')
+    plt.plot(start[1], start[0], 'ro')
+    plt.plot(end[1], end[0], 'bo')
+    plt.show()
 
 def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_factors):
     # Starting from start_window_rowcol start tracing a path
@@ -78,9 +100,6 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
     window = generate_bounding_box(start_rowcol, end_rowcol, size_factors)
     start_window_rowcol = apply_window_to_rowcol(window, start_rowcol)
     end_window_rowcol = apply_window_to_rowcol(window, end_rowcol)
-    print(window)
-    print(start_rowcol)
-    print(start_window_rowcol)
     start_window_rowcol = start_window_rowcol[1], start_window_rowcol[0]
 
     height_raster = get_raster(window)
@@ -91,27 +110,22 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
 
     key_lookup = {k: key for key in graph.keys() for k in key}
     path = [key_lookup[start_window_rowcol]]
-    print(start_window_rowcol)
-    print(find_centerpoint(key_lookup[start_window_rowcol]))
     for i in range(300):
-        previous_point = path[-1]
-        next_points = graph[previous_point]
+        current_point = path[-1]
+        next_points = graph[current_point]
         if len(next_points) == 0:
-            print("Exit early")
-            # TODO detect where graph edge is and then iterate here!
-            break
+            size_factors = detect_edge_touch(height_raster.shape, current_point, size_factors)
+            print(f"Rerunning with size factors {size_factors}")
+            show_plot(height_raster, start_window_rowcol, find_centerpoint(current_point), path)
+            return enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_factors)
+
         selected_point = min(
             next_points, key=lambda node_key: height_raster[node_key[0]]
         )
         path.append(selected_point)
 
-    plt.imshow(height_raster)
-    plt.plot(start_window_rowcol[1], start_window_rowcol[0], 'go')
-    for point in path:
-        plt.plot(point[1], point[0], 'go')
-    plt.show()
-
-    # return trace_path(height_raster, start_window_rowcol, end_window_rowcol)
+    show_plot(height_raster, start_window_rowcol, end_window_rowcol, path)
+    return path
 
 
 def generate_bounding_box(start_rowcol, end_rowcol, size_factors):

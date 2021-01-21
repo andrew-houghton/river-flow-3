@@ -30,6 +30,7 @@ def check_equal_height_nodes(heights, graph):
 def check_flooded_nodes(heights, graph):
     # for every node key check that it's either on the border
     # or higher than all it's neighbours
+    # nodes which do touch the border should have no outflow nodes
     # check no nodes are missing
     expected_visited = {
         (x, y) for x in range(heights.shape[0]) for y in range(heights.shape[1])
@@ -44,5 +45,7 @@ def check_flooded_nodes(heights, graph):
             assert any(
                 heights[neighbour[0]] < current_height for neighbour in neighbours
             ), "A neighbour must be lower"
+        else:
+            assert len(graph[node_key]) == 0, "Nodes which touch the border are dead ends"
 
     assert expected_visited == visited, "Every node should be visited"

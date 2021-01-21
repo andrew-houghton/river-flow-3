@@ -150,4 +150,10 @@ def flood_low_points(graph, heights):
 
         for merging_node in merging_nodes:
             del graph[merging_node]
+
+    # Remove outflow for edge nodes
+    for node_key in graph:
+        if any(does_node_touch_border(heights.shape, node) for node in node_key):
+            graph[node_key] = []
+
     return graph
