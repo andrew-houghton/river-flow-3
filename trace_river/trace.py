@@ -96,17 +96,22 @@ def distance_closest_point(end, node_key):
     return node, abs(end[0] - node[0]) + abs(end[1] - node[1])
 
 
+# TODO figure out a neater version of the algorithm which just expands the area
+
 # When stitching on a new segment to the graph;
 # equal height nodes should be merged
 # flooding should occur for any low points which remain in the graph (pretty sure this is satisfactory)
-
+# Things to POC:
+# - Does stitching maintain the desired properties of the graph
 # To test we should be able to assert that the from 2 joined sections is the same as
 # the original graph made from doing both sections at once
+# - Can we find the edges easily?
+# - Can we make a memory efficient storage for heights and display this in matplotlib?
+# - Can we add sections to this height storage?
+# - Can the algorithm easily index from 0?
 
 def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_factors):
-    # TODO recursion is causing memory to leak
     # TODO instead of using the center point use a search to generate a continous path through the merged node
-    # TODO figure out a neater version of the algorithm which just expands the area
 
     window = generate_bounding_box(start_rowcol, end_rowcol, size_factors)
     start_window_rowcol = apply_window_to_rowcol(window, start_rowcol)
