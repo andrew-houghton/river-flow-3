@@ -100,7 +100,6 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
     window = generate_bounding_box(start_rowcol, end_rowcol, size_factors)
     start_window_rowcol = apply_window_to_rowcol(window, start_rowcol)
     end_window_rowcol = apply_window_to_rowcol(window, end_rowcol)
-    print(start_window_rowcol)
 
     height_raster = get_raster(window)
 
@@ -119,13 +118,13 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
                 height_raster.shape, current_point, size_factors
             )
             print(f"Restarting with size factors {size_factors}")
-            # show_plot(
-            #     height_raster,
-            #     start_window_rowcol,
-            #     end_window_rowcol,
-            #     find_centerpoint(current_point),
-            #     path,
-            # )
+            show_plot(
+                height_raster,
+                start_window_rowcol,
+                end_window_rowcol,
+                find_centerpoint(current_point),
+                path,
+            )
             return enlarge_bounding_box_until_path_is_found(
                 start_rowcol, end_rowcol, size_factors
             )
@@ -152,8 +151,6 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
 def generate_bounding_box(start_rowcol, end_rowcol, size_factors):
     # Generate a box which encloses the start and end point
     # Size factors stores where the bounding box needs to be larger than normal
-    print(start_rowcol)
-    print(end_rowcol)
 
     center_y = (start_rowcol[0] + end_rowcol[0]) // 2
     center_x = (start_rowcol[1] + end_rowcol[1]) // 2
@@ -162,7 +159,6 @@ def generate_bounding_box(start_rowcol, end_rowcol, size_factors):
         abs(end_rowcol[0] - start_rowcol[0]), abs(end_rowcol[1] - start_rowcol[1])
     )
     edge_to_center = longest_dimension / 2
-    print(longest_dimension)
 
     top = int(max(0, center_y - edge_to_center * size_factors[0]))
     bottom = int(
@@ -172,8 +168,7 @@ def generate_bounding_box(start_rowcol, end_rowcol, size_factors):
     right = int(
         min(TIF_MAX_DIMENSIONS[0] - 1, center_x + edge_to_center * size_factors[3])
     )
-
-    print(top, bottom, left, right, right - left, bottom - top)
+    # print(top, bottom, left, right, right - left, bottom - top)
 
     return rio.windows.Window(
         col_off=left,
@@ -184,6 +179,6 @@ def generate_bounding_box(start_rowcol, end_rowcol, size_factors):
 
 
 if __name__ == "__main__":
-    start_point = (-41.448218, 147.086086)  # lat lon
-    end_point = (-41.443814, 147.120220)  # lat lon
+    start_point = (-41.55327294639188, 145.87881557530164)  # lat lon
+    end_point = (-41.62953442116648, 145.7696457139196)  # lat lon
     start_finish_to_path(start_point, end_point)
