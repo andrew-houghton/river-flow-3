@@ -62,6 +62,7 @@ def find_centerpoint(node_key):
     y = sum(i[1] for i in node_key) / len(node_key)
     return x, y
 
+
 def detect_edge_touch(shape, node, size_factors):
     enlarge = [False, False, False, False]
     for point in node:
@@ -73,17 +74,21 @@ def detect_edge_touch(shape, node, size_factors):
             enlarge[3] = True
         if point[1] >= shape[1] - 1:
             enlarge[2] = True
-    assert any(enlarge), "This condition should only happen when the path reaches an edge"
-    return [sf*1.5 if e else sf for e, sf in zip(enlarge, size_factors)]
+    assert any(
+        enlarge
+    ), "This condition should only happen when the path reaches an edge"
+    return [sf * 1.5 if e else sf for e, sf in zip(enlarge, size_factors)]
+
 
 def show_plot(heights, start, end, path):
     plt.imshow(heights)
     for point in path:
         point = find_centerpoint(point)
-        plt.plot(point[1], point[0], 'go')
-    plt.plot(start[1], start[0], 'ro')
-    plt.plot(end[1], end[0], 'bo')
+        plt.plot(point[1], point[0], "go")
+    plt.plot(start[1], start[0], "ro")
+    plt.plot(end[1], end[0], "bo")
     plt.show()
+
 
 def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_factors):
     # Starting from start_window_rowcol start tracing a path
@@ -114,10 +119,19 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
         current_point = path[-1]
         next_points = graph[current_point]
         if len(next_points) == 0:
-            size_factors = detect_edge_touch(height_raster.shape, current_point, size_factors)
+            size_factors = detect_edge_touch(
+                height_raster.shape, current_point, size_factors
+            )
             print(f"Rerunning with size factors {size_factors}")
-            show_plot(height_raster, start_window_rowcol, find_centerpoint(current_point), path)
-            return enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_factors)
+            show_plot(
+                height_raster,
+                start_window_rowcol,
+                find_centerpoint(current_point),
+                path,
+            )
+            return enlarge_bounding_box_until_path_is_found(
+                start_rowcol, end_rowcol, size_factors
+            )
 
         selected_point = min(
             next_points, key=lambda node_key: height_raster[node_key[0]]
@@ -147,8 +161,6 @@ def generate_bounding_box(start_rowcol, end_rowcol, size_factors):
     bottom = int(
         min(TIF_MAX_DIMENSIONS[0] - 1, center_y + edge_to_center * size_factors[3])
     )
-
-    print(left, right, top, bottom)
 
     return rio.windows.Window(left, top, right - left, bottom - top)
 

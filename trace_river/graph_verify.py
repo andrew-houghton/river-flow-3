@@ -46,6 +46,8 @@ def check_flooded_nodes(heights, graph):
                 heights[neighbour[0]] < current_height for neighbour in neighbours
             ), "A neighbour must be lower"
         else:
-            assert len(graph[node_key]) == 0, "Nodes which touch the border are dead ends"
+            assert (
+                len(graph[node_key]) == 0
+            ), "Nodes which touch the border are dead ends"
 
     assert expected_visited == visited, "Every node should be visited"
