@@ -96,7 +96,18 @@ def distance_closest_point(end, node_key):
     return node, abs(end[0] - node[0]) + abs(end[1] - node[1])
 
 
+# When stitching on a new segment to the graph;
+# equal height nodes should be merged
+# flooding should occur for any low points which remain in the graph (pretty sure this is satisfactory)
+
+# To test we should be able to assert that the from 2 joined sections is the same as
+# the original graph made from doing both sections at once
+
 def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_factors):
+    # TODO recursion is causing memory to leak
+    # TODO instead of using the center point use a search to generate a continous path through the merged node
+    # TODO figure out a neater version of the algorithm which just expands the area
+
     window = generate_bounding_box(start_rowcol, end_rowcol, size_factors)
     start_window_rowcol = apply_window_to_rowcol(window, start_rowcol)
     end_window_rowcol = apply_window_to_rowcol(window, end_rowcol)
@@ -118,13 +129,13 @@ def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_fact
                 height_raster.shape, current_point, size_factors
             )
             print(f"Restarting with size factors {size_factors}")
-            # show_plot(
-            #     height_raster,
-            #     start_window_rowcol,
-            #     end_window_rowcol,
-            #     find_centerpoint(current_point),
-            #     path,
-            # )
+            show_plot(
+                height_raster,
+                start_window_rowcol,
+                end_window_rowcol,
+                find_centerpoint(current_point),
+                path,
+            )
             return enlarge_bounding_box_until_path_is_found(
                 start_rowcol, end_rowcol, size_factors
             )
@@ -206,7 +217,7 @@ def elevation_profile(path, heights):
 if __name__ == "__main__":
     start_point = (-41.55327294639188, 145.87881557530164)  # Vale putin
     end_point = (-41.62953442116648, 145.7696457139196)  # Vale takeout
-    # start_point = (-42.21404050624385, 145.91789407285435)  # Franklin putin
+    # start_point = (-42.229119247079964, 145.81054340737677)  # Franklin putin
     # end_point = (-42.285970802829496, 145.74782103623605)  # Franklin midway
     path, heights = start_finish_to_path(start_point, end_point)
     measure_distance(path)
