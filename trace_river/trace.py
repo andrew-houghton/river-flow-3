@@ -97,7 +97,6 @@ def distance_closest_point(end, node_key):
 
 
 # TODO figure out a neater version of the algorithm which just expands the area
-
 # When stitching on a new segment to the graph;
 # equal height nodes should be merged
 # flooding should occur for any low points which remain in the graph (pretty sure this is satisfactory)
@@ -110,8 +109,16 @@ def distance_closest_point(end, node_key):
 # - Can we add sections to this height storage?
 # - Can the algorithm easily index from 0?
 
+
+# TODO instead of using the center point use a search to generate a continous path through the merged node
+# When finding the final path:
+# Store the exact entry point from the previous node.
+# For each lake/ multi-point node encountered create a graph out of the grid where each edge in the grid is shorter if it's deeper.
+# Surface edge is 2 units, deepest edge is one unit
+# Find the shortest path from the entry node to the exit node.
+# If there are multiple exit nodes then consider them all to be equal weight.
+
 def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_factors):
-    # TODO instead of using the center point use a search to generate a continous path through the merged node
 
     window = generate_bounding_box(start_rowcol, end_rowcol, size_factors)
     start_window_rowcol = apply_window_to_rowcol(window, start_rowcol)
