@@ -1,5 +1,4 @@
 from pyproj import Proj
-import rasterio
 from pathlib import Path
 import rasterio as rio
 from matplotlib import pyplot as plt
@@ -27,22 +26,63 @@ def lat_lon_to_row_col(lat, lon):
     return int(y), int(x)
 
 
-# def row_col_to_lat_lon(x, y):
-#     x = (x + 30000) * 10
-#     y = (55000 - y) * 10
-#     return proj(x, y, inverse=True)
-
-
-def start_finish_to_path(start_point, end_point):
-    # Returns a list of lat longs with heights
-
+def trace_and_expand_existing_graph(start_point, end_point):
     start_rowcol = lat_lon_to_row_col(*start_point)
     end_rowcol = lat_lon_to_row_col(*end_point)
-    size_factors = [1.2, 1.2, 1.2, 1.2]
-    return enlarge_bounding_box_until_path_is_found(
-        start_rowcol, end_rowcol, size_factors
-    )
 
+    starting_segment = (rowcol[0]//100, rowcol[1]//100)
+    active_segments = [starting_segment]
+    segment_raster = get_raster(starting_segment)
+    heights = np.zeros(TIF_MAX_DIMENSIONS)
+    heights[
+        starting_segment[0]*100:starting_segment[0]*100+100,
+        starting_segment[1]*100:starting_segment[1]*100+100,
+    ] = raster
+
+    graph = convert_to_graph(heights, active_segments)
+    graph = flood_low_points(graph, heights)
+
+    key_lookup = {k: key for key in graph.keys() for k in key}
+    path = [key_lookup[start_window_rowcol]]
+
+    closest_finish_point = None
+    finish_point_threshold = 10
+
+    for i in range(10000):
+        current_point = path[-1]
+        next_points = graph[current_point]
+        if len(next_points) == 0:
+            required_tile = detect_edge_touch(
+                current_point, active_segments,
+            )
+            active_segments.append(required_tile)
+            segment_raster = get_raster(required_tile)
+            heights[
+                required_tile[0]*100:required_tile[0]*100+100,
+                required_tile[1]*100:required_tile[1]*100+100,
+            ] = raster
+            graph = add_tile_to_graph(graph, required_tile, heights)
+            graph = flood_added_tile(graph, required_tile, heights)
+
+        selected_point = min(
+            next_points, key=lambda node_key: height_raster[node_key[0]]
+        )
+        distance = distance_closest_point(
+            end_rowcol, selected_point
+        )
+        if closest_finish_point is not None:
+            if distance > distance_closest_point(end_rowcol, closest_finish_point):
+                # We're getting further away so just finish without the last point
+                return path
+            else:
+                closest_finish_point = selected_point
+        elif distance < finish_point_threshold:
+            closest_finish_point = selected_point
+
+        path.append(selected_point)
+
+    print("Algorithm passed iteration limit")
+    return path
 
 def apply_window_to_rowcol(window, rowcol):
     # Convert co-ordinates to be relative to a window
@@ -92,7 +132,7 @@ def show_plot(heights, start, end, dest, path):
 
 
 def distance_closest_point(end, node_key):
-    node = min(node_key, key=lambda x: abs(end[0] - x[0]) + abs(end[1] - x[1]))
+    node = min(node_key, key=lambda x: abs(end[0] - x[0]) + abs(end[1] - x[1]))+
     return node, abs(end[0] - node[0]) + abs(end[1] - node[1])
 
 
