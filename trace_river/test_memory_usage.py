@@ -10,12 +10,14 @@ heights_tif_path = (
     Path(__name__).absolute().parent.parent.joinpath("tasmania", "heights.tif")
 )
 
+
 def get_raster(window, map_type="height"):
     if map_type == "height":
         with rio.open(heights_tif_path) as heights:
             return heights.read(1, window=window)
     else:
         raise Exception("Not implemented")
+
 
 def main():
     heights = np.zeros((30978, 30978))
@@ -28,5 +30,6 @@ def main():
     plt.imshow(heights[200:300, 200:300])
     plt.show()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

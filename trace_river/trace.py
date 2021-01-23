@@ -2,9 +2,11 @@ from pyproj import Proj
 from pathlib import Path
 import rasterio as rio
 from matplotlib import pyplot as plt
-from algorithms import convert_to_graph, flood_low_points
+from algorithms import flood_low_points, add_tile_to_graph
 from pprint import pprint
 from graph_verify import check_equal_height_nodes, check_flooded_nodes
+import numpy as np
+
 
 proj_string = "+proj=utm +zone=55 +south +datum=WGS84 +units=m +no_defs"
 proj = Proj(proj_string)
@@ -15,6 +17,7 @@ colour_tif_path = (
     Path(__name__).absolute().parent.parent.joinpath("tasmania", "colour.tif")
 )
 TIF_MAX_DIMENSIONS = (30978, 30978)
+GRID = 100
 assert heights_tif_path.exists()
 
 
@@ -26,21 +29,31 @@ def lat_lon_to_row_col(lat, lon):
     return int(y), int(x)
 
 
+def get_raster(segment):
+    window = rio.windows.Window(
+        col_off=segment[1] * GRID,
+        row_off=segment[0] * GRID,
+        width=GRID,
+        height=GRID,
+    )
+    with rio.open(heights_tif_path) as heights:
+        return heights.read(1, window=window)
+
+
 def trace_and_expand_existing_graph(start_point, end_point):
     start_rowcol = lat_lon_to_row_col(*start_point)
     end_rowcol = lat_lon_to_row_col(*end_point)
 
-    starting_segment = (rowcol[0]//100, rowcol[1]//100)
+    starting_segment = (start_rowcol[0] // GRID, start_rowcol[1] // GRID)
     active_segments = [starting_segment]
-    segment_raster = get_raster(starting_segment)
     heights = np.zeros(TIF_MAX_DIMENSIONS)
     heights[
-        starting_segment[0]*100:starting_segment[0]*100+100,
-        starting_segment[1]*100:starting_segment[1]*100+100,
-    ] = raster
+        starting_segment[0] * GRID : starting_segment[0] * GRID + GRID,
+        starting_segment[1] * GRID : starting_segment[1] * GRID + GRID,
+    ] = get_raster(starting_segment)
 
-    graph = convert_to_graph(heights, active_segments)
-    graph = flood_low_points(graph, heights)
+    graph = add_tile_to_graph(heights, GRID, starting_segment, active_segments)
+    graph = flood_added_tile(graph, heights)
 
     key_lookup = {k: key for key in graph.keys() for k in key}
     path = [key_lookup[start_window_rowcol]]
@@ -53,13 +66,14 @@ def trace_and_expand_existing_graph(start_point, end_point):
         next_points = graph[current_point]
         if len(next_points) == 0:
             required_tile = detect_edge_touch(
-                current_point, active_segments,
+                current_point,
+                active_segments,
             )
             active_segments.append(required_tile)
             segment_raster = get_raster(required_tile)
             heights[
-                required_tile[0]*100:required_tile[0]*100+100,
-                required_tile[1]*100:required_tile[1]*100+100,
+                required_tile[0] * GRID : required_tile[0] * GRID + GRID,
+                required_tile[1] * GRID : required_tile[1] * GRID + GRID,
             ] = raster
             graph = add_tile_to_graph(graph, required_tile, heights)
             graph = flood_added_tile(graph, required_tile, heights)
@@ -67,9 +81,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
         selected_point = min(
             next_points, key=lambda node_key: height_raster[node_key[0]]
         )
-        distance = distance_closest_point(
-            end_rowcol, selected_point
-        )
+        distance = distance_closest_point(end_rowcol, selected_point)
         if closest_finish_point is not None:
             if distance > distance_closest_point(end_rowcol, closest_finish_point):
                 # We're getting further away so just finish without the last point
@@ -84,17 +96,10 @@ def trace_and_expand_existing_graph(start_point, end_point):
     print("Algorithm passed iteration limit")
     return path
 
+
 def apply_window_to_rowcol(window, rowcol):
     # Convert co-ordinates to be relative to a window
     return rowcol[0] - window.row_off, rowcol[1] - window.col_off
-
-
-def get_raster(window, map_type="height"):
-    if map_type == "height":
-        with rio.open(heights_tif_path) as heights:
-            return heights.read(1, window=window)
-    else:
-        raise Exception("Not implemented")
 
 
 def find_centerpoint(node_key):
@@ -132,7 +137,7 @@ def show_plot(heights, start, end, dest, path):
 
 
 def distance_closest_point(end, node_key):
-    node = min(node_key, key=lambda x: abs(end[0] - x[0]) + abs(end[1] - x[1]))+
+    node = min(node_key, key=lambda x: abs(end[0] - x[0]) + abs(end[1] - x[1]))
     return node, abs(end[0] - node[0]) + abs(end[1] - node[1])
 
 
@@ -157,6 +162,7 @@ def distance_closest_point(end, node_key):
 # Surface edge is 2 units, deepest edge is one unit
 # Find the shortest path from the entry node to the exit node.
 # If there are multiple exit nodes then consider them all to be equal weight.
+
 
 def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_factors):
 
@@ -250,6 +256,7 @@ def measure_distance(path):
         ) ** 0.5
     print(f"River distance {distance/100:.2f}km")
 
+
 def elevation_profile(path, heights):
     distance = 0
     x = [0]
@@ -258,19 +265,21 @@ def elevation_profile(path, heights):
         centerpoint = find_centerpoint(point)
         next_centerpoint = find_centerpoint(next_point)
         distance += (
-            (centerpoint[0] - next_centerpoint[0]) ** 2 + (centerpoint[1] - next_centerpoint[1]) ** 2
+            (centerpoint[0] - next_centerpoint[0]) ** 2
+            + (centerpoint[1] - next_centerpoint[1]) ** 2
         ) ** 0.5
-        x.append(distance/100)  # Distance in km
+        x.append(distance / 100)  # Distance in km
         y.append(heights[next_point[0]])
     plt.plot(x, y)
     plt.show()
     print(f"Avg gradient {(max(y)-min(y))/(distance/100):.0f}m/km")
+
 
 if __name__ == "__main__":
     start_point = (-41.55327294639188, 145.87881557530164)  # Vale putin
     end_point = (-41.62953442116648, 145.7696457139196)  # Vale takeout
     # start_point = (-42.229119247079964, 145.81054340737677)  # Franklin putin
     # end_point = (-42.285970802829496, 145.74782103623605)  # Franklin midway
-    path, heights = start_finish_to_path(start_point, end_point)
+    path, heights = trace_and_expand_existing_graph(start_point, end_point)
     measure_distance(path)
     elevation_profile(path, heights)

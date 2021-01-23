@@ -3,43 +3,49 @@ from collections import defaultdict
 import heapq
 
 
-def get_adjacent_nodes(heights, x, y):
+def get_adjacent_nodes(grid_size, active_segments, x, y):
     output = []
     for point in ((x, y - 1), (x, y + 1), (x - 1, y), (x + 1, y)):
-        if point[0] < heights.shape[0] and point[0] >= 0:
-            if point[1] < heights.shape[1] and point[1] >= 0:
-                output.append(point)
+        point_segment = x // grid_size, y // grid_size
+        if point_segment in active_segments:
+            output.append(point)
     return output
 
 
-def convert_to_graph(heights):
+def add_tile_to_graph(heights, grid_size, added_segment, active_segments):
     node_merge_operations = []
     skip_nodes = set()
     non_skip_nodes = []
-    # node_check_func = partial(check_nodes_equal_height, state=state, settings=settings)
-    for x in tqdm(
-        range(heights.shape[0]), desc="Processing rows for equal height merge"
-    ):
-        for y in range(heights.shape[1]):
-            if (x, y) not in skip_nodes:
-                height = heights[x, y]
-                visited, queue = set(), [(x, y)]
-                while queue:
-                    vertex = queue.pop(0)
-                    if vertex not in visited:
-                        visited.add(vertex)
-                        adjacent_nodes = get_adjacent_nodes(heights, *vertex)
-                        adjacent_equal_height = {
-                            i for i in adjacent_nodes if heights[i] == height
-                        }
-                        queue.extend(adjacent_equal_height - visited - skip_nodes)
 
-                if visited != {(x, y)}:
-                    node_merge_operations.append(visited)
-                    for node in visited:
-                        skip_nodes.add(node)
-                else:
-                    non_skip_nodes.append((x, y))
+    points_in_added_segment = [
+        (added_segment[0] * grid_size + y, added_segment[1] * grid_size + x)
+        for x in range(100)
+        for y in range(100)
+    ]
+    for point in tqdm(
+        points_in_added_segment, desc="Processing points in added segment"
+    ):
+        if point not in skip_nodes:
+            height = heights[point]
+            visited, queue = set(), [point]
+            while queue:
+                vertex = queue.pop(0)
+                if vertex not in visited:
+                    visited.add(vertex)
+                    adjacent_nodes = get_adjacent_nodes(
+                        grid_size, active_segments, *vertex
+                    )
+                    adjacent_equal_height = {
+                        i for i in adjacent_nodes if heights[i] == height
+                    }
+                    queue.extend(adjacent_equal_height - visited - skip_nodes)
+
+            if visited != {point}:
+                node_merge_operations.append(visited)
+                for node in visited:
+                    skip_nodes.add(node)
+            else:
+                non_skip_nodes.append(point)
 
     graph = defaultdict(list)
     new_key = {}
