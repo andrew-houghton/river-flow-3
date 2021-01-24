@@ -1,5 +1,4 @@
 from tqdm import tqdm
-from collections import defaultdict
 import heapq
 
 
@@ -20,13 +19,14 @@ def get_points_in_segment(segment, grid_size):
     ]
 
 
-def add_tile_to_graph(heights, grid_size, added_segment, active_segments):
+def add_tile_to_graph(graph, heights, grid_size, added_segment, active_segments):
     node_merge_operations = []
     skip_points = set()
     non_skip_points = []
 
     for point in tqdm(
-        get_points_in_segment(added_segment, grid_size), desc="Finding equal height nodes via BFS"
+        get_points_in_segment(added_segment, grid_size),
+        desc="Finding equal height nodes via BFS",
     ):
         if point not in skip_points:
             height = heights[point]
@@ -50,15 +50,17 @@ def add_tile_to_graph(heights, grid_size, added_segment, active_segments):
             else:
                 non_skip_points.append(point)
 
-    graph = defaultdict(list)
     new_key = {}
-    for merging_nodes in tqdm(node_merge_operations, desc="Formatting node keys for merged nodes"):
+    for merging_nodes in tqdm(
+        node_merge_operations, desc="Formatting node keys for merged nodes"
+    ):
         sorted_merging_nodes = tuple(sorted(merging_nodes))
         for node in merging_nodes:
             new_key[node] = sorted_merging_nodes
 
     for point in tqdm(
-        sorted(list(skip_points) + non_skip_points), desc="Assembling graph data structure"
+        sorted(list(skip_points) + non_skip_points),
+        desc="Assembling graph data structure",
     ):
         node_key = new_key.get(point, (point,))
 
@@ -74,19 +76,38 @@ def add_tile_to_graph(heights, grid_size, added_segment, active_segments):
     return dict(graph)
 
 
-def does_node_touch_border(shape, node):
-    return (
-        node[0] == 0
-        or node[1] == 0
-        or node[0] == shape[0] - 1
-        or node[1] == shape[1] - 1
-    )
+def does_node_touch_border(active_segments, grid_size, point):
+    if (point[0] // grid_size, (point[1] - 1) // grid_size) not in active_segments:
+        return True
+    if (point[0] // grid_size, (point[1] + 1) // grid_size) not in active_segments:
+        return True
+    if ((point[0] - 1) // grid_size, point[1] // grid_size) not in active_segments:
+        return True
+    if ((point[0] + 1) // grid_size, point[1] // grid_size) not in active_segments:
+        return True
+    return False
 
 
-def flood_added_tile(graph, heights, added_segment, active_segments):
+def flood_added_tile(graph, heights, grid_size, added_segment, active_segments):
     low_nodes = []
-    for node_key, adjacent_nodes in tqdm(graph.items(), desc="Checking for low nodes"):
-        if any(does_node_touch_border(heights.shape, node) for node in node_key):
+
+    # print("Creating node lookup")
+    key_lookup = {k: key for key in graph.keys() for k in key}
+    # print("Created node lookup")
+
+    nodes_which_could_be_low_points = {
+        key_lookup[adjacent_point]
+        for point in get_points_in_segment(added_segment, grid_size)
+        for adjacent_point in get_adjacent_nodes(grid_size, active_segments, *point)
+    }
+    for node_key in tqdm(
+        nodes_which_could_be_low_points, desc="Checking for low nodes"
+    ):
+        adjacent_nodes = graph[node_key]
+        if any(
+            does_node_touch_border(active_segments, grid_size, point)
+            for point in node_key
+        ):
             continue
         height = heights[node_key[0]]
         for adjacent_node_key in adjacent_nodes:
@@ -120,7 +141,10 @@ def flood_added_tile(graph, heights, added_segment, active_segments):
                 break
             lake_height = node_height
             merging_nodes.add(node)
-            if any(does_node_touch_border(heights.shape, i) for i in node):
+            if any(
+                does_node_touch_border(active_segments, grid_size, point)
+                for point in node
+            ):
                 break
             for adjacent_node in graph[node]:
                 if adjacent_node not in nodes_in_queue:
@@ -162,10 +186,5 @@ def flood_added_tile(graph, heights, added_segment, active_segments):
 
         for merging_node in merging_nodes:
             del graph[merging_node]
-
-    # Remove outflow for edge nodes
-    for node_key in graph:
-        if any(does_node_touch_border(heights.shape, node) for node in node_key):
-            graph[node_key] = []
 
     return graph

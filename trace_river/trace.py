@@ -6,6 +6,7 @@ from algorithms import flood_added_tile, add_tile_to_graph
 from pprint import pprint
 from graph_verify import check_equal_height_nodes, check_flooded_nodes
 import numpy as np
+from collections import defaultdict
 
 
 proj_string = "+proj=utm +zone=55 +south +datum=WGS84 +units=m +no_defs"
@@ -44,59 +45,67 @@ def trace_and_expand_existing_graph(start_point, end_point):
     start_rowcol = lat_lon_to_row_col(*start_point)
     end_rowcol = lat_lon_to_row_col(*end_point)
 
-    starting_segment = (start_rowcol[0] // GRID, start_rowcol[1] // GRID)
-    active_segments = [starting_segment]
+    next_segment = (start_rowcol[0] // GRID, start_rowcol[1] // GRID)
+    print(f"Starting with tile {next_segment}")
+    active_segments = [next_segment]
     heights = np.zeros(TIF_MAX_DIMENSIONS)
     heights[
-        starting_segment[0] * GRID : starting_segment[0] * GRID + GRID,
-        starting_segment[1] * GRID : starting_segment[1] * GRID + GRID,
-    ] = get_raster(starting_segment)
+        next_segment[0] * GRID : next_segment[0] * GRID + GRID,
+        next_segment[1] * GRID : next_segment[1] * GRID + GRID,
+    ] = get_raster(next_segment)
 
-    graph = add_tile_to_graph(heights, GRID, starting_segment, active_segments)
-    check_equal_height_nodes(heights, graph, active_segments, GRID)
-    graph = flood_added_tile(graph, heights)
-    check_flooded_nodes(heights, graph, active_segments, GRID)
+    graph = defaultdict(list)
+    graph = add_tile_to_graph(graph, heights, GRID, next_segment, active_segments)
+    check_equal_height_nodes(graph, heights, active_segments, GRID)
+    graph = flood_added_tile(graph, heights, GRID, next_segment, active_segments)
+    check_flooded_nodes(graph, heights, active_segments, GRID)
 
     key_lookup = {k: key for key in graph.keys() for k in key}
-    path = [key_lookup[start_window_rowcol]]
+    path = [key_lookup[start_rowcol]]
 
     closest_finish_point = None
     finish_point_threshold = 10
 
     for i in range(10000):
-        current_point = path[-1]
-        next_points = graph[current_point]
-        if len(next_points) == 0:
-            required_tile = detect_edge_touch(
-                current_point,
-                active_segments,
-            )
-            active_segments.append(required_tile)
-            segment_raster = get_raster(required_tile)
-            heights[
-                required_tile[0] * GRID : required_tile[0] * GRID + GRID,
-                required_tile[1] * GRID : required_tile[1] * GRID + GRID,
-            ] = raster
-            graph = add_tile_to_graph(graph, required_tile, heights)
-            graph = flood_added_tile(graph, required_tile, heights)
-
-        selected_point = min(
-            next_points, key=lambda node_key: height_raster[node_key[0]]
+        current_node = path[-1]
+        next_nodes = graph[current_node]
+        next_segment = detect_edge_touch(
+            current_node,
+            active_segments,
+            GRID,
         )
-        distance = distance_closest_point(end_rowcol, selected_point)
-        if closest_finish_point is not None:
-            if distance > distance_closest_point(end_rowcol, closest_finish_point):
-                # We're getting further away so just finish without the last point
-                return path
-            else:
-                closest_finish_point = selected_point
-        elif distance < finish_point_threshold:
-            closest_finish_point = selected_point
+        if next_segment:
+            print(f"Adding tile {next_segment}")
+            active_segments.append(next_segment)
+            heights[
+                next_segment[0] * GRID : next_segment[0] * GRID + GRID,
+                next_segment[1] * GRID : next_segment[1] * GRID + GRID,
+            ] = get_raster(next_segment)
+            graph = add_tile_to_graph(
+                graph, heights, GRID, next_segment, active_segments
+            )
+            graph = flood_added_tile(
+                graph, heights, GRID, next_segment, active_segments
+            )
+            key_lookup = {k: key for key in graph.keys() for k in key}
+            next_nodes = graph[current_node]
 
-        path.append(selected_point)
+        selected_node = min(next_nodes, key=lambda node_key: heights[node_key[0]])
+        distance = distance_closest_point(end_rowcol, selected_node)
+        closest_finish_node = None
+        if closest_finish_node is not None:
+            if distance > distance_closest_point(end_rowcol, closest_finish_node):
+                # We're getting further away so just finish without the last point
+                break
+            else:
+                closest_finish_node = selected_node
+        elif distance < finish_point_threshold:
+            closest_finish_node = selected_node
+
+        path.append(selected_node)
 
     print("Algorithm passed iteration limit")
-    return path
+    return path, heights
 
 
 def apply_window_to_rowcol(window, rowcol):
@@ -110,21 +119,16 @@ def find_centerpoint(node_key):
     return x, y
 
 
-def detect_edge_touch(shape, node, size_factors):
-    enlarge = [False, False, False, False]
+def detect_edge_touch(node, active_segments, grid_size):
+    # This function should instead return the segment which should be added
     for point in node:
-        if point[0] == 0:
-            enlarge[0] = True
-        if point[1] == 0:
-            enlarge[2] = True
-        if point[0] >= shape[0] - 1:
-            enlarge[1] = True
-        if point[1] >= shape[1] - 1:
-            enlarge[3] = True
-    assert any(
-        enlarge
-    ), "This condition should only happen when the path reaches an edge"
-    return [sf * 1.5 if e else sf for e, sf in zip(enlarge, size_factors)]
+        for offset in ((0, -1), (0, 1), (1, 0), (-1, 0)):
+            offset_point_segment = (
+                (point[0] + offset[0]) // grid_size,
+                (point[1] + offset[1]) // grid_size,
+            )
+            if offset_point_segment not in active_segments:
+                return offset_point_segment
 
 
 def show_plot(heights, start, end, dest, path):
@@ -139,8 +143,7 @@ def show_plot(heights, start, end, dest, path):
 
 
 def distance_closest_point(end, node_key):
-    node = min(node_key, key=lambda x: abs(end[0] - x[0]) + abs(end[1] - x[1]))
-    return node, abs(end[0] - node[0]) + abs(end[1] - node[1])
+    return min(abs(end[0] - x[0]) + abs(end[1] - x[1]) for x in node_key)
 
 
 # TODO figure out a neater version of the algorithm which just expands the area

@@ -2,7 +2,7 @@ from algorithms import get_adjacent_nodes, does_node_touch_border, get_points_in
 from tqdm import tqdm
 
 
-def check_equal_height_nodes(heights, graph, active_segments, grid_size):
+def check_equal_height_nodes(graph, heights, active_segments, grid_size):
     # For every node check that it's connected to it's equal height neighbours
     # and adjacent to it's different height neighbours
     # Also check that all expected nodes are included
@@ -29,7 +29,7 @@ def check_equal_height_nodes(heights, graph, active_segments, grid_size):
     assert expected_visited == visited, "Every node should be visited"
 
 
-def check_flooded_nodes(heights, graph):
+def check_flooded_nodes(graph, heights, active_segments, grid_size):
     # for every node key check that it's either on the border
     # or higher than all it's neighbours
     # nodes which do touch the border should have no outflow nodes
@@ -39,16 +39,14 @@ def check_flooded_nodes(heights, graph):
         current_height = heights[node_key[0]]
         for node in node_key:
             visited.add(node)
-        assert False, "Update does_node_touch_border function first"
-        if not any(does_node_touch_border(heights.shape, node) for node in node_key):
+        if not any(
+            does_node_touch_border(active_segments, grid_size, point)
+            for point in node_key
+        ):
             # This node should not have lower height neighbours
             assert any(
                 heights[neighbour[0]] < current_height for neighbour in neighbours
             ), "A neighbour must be lower"
-        else:
-            assert (
-                len(graph[node_key]) == 0
-            ), "Nodes which touch the border are dead ends"
 
     expected_visited = {
         point
