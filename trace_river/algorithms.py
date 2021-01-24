@@ -11,6 +11,16 @@ def get_adjacent_nodes(grid_size, active_segments, y, x):
     return output
 
 
+def count_graph(graph):
+    # For debugging
+    num_nodes = 0
+    num_points = 0
+    for node in graph:
+        num_nodes += 1
+        num_points += len(node)
+    print(f"{num_nodes=} {num_points=}")
+
+
 def get_points_in_segment(segment, grid_size):
     return [
         (segment[0] * grid_size + y, segment[1] * grid_size + x)
@@ -30,6 +40,7 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
     non_skip_points = []
     key_lookup = {k: key for key in graph.keys() for k in key}
 
+    count_graph(graph)
     for point in tqdm(
         get_points_in_segment(added_segment, grid_size),
         desc="Finding equal height nodes via BFS",
@@ -56,29 +67,37 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
             else:
                 non_skip_points.append(point)
 
+    nodes_which_overlap_the_border = set()
+    nodes_and_points_to_fix = []
     new_key = {}
     for merging_nodes in tqdm(
         node_merge_operations, desc="Formatting node keys for merged nodes"
     ):
         sorted_merging_nodes = tuple(sorted(merging_nodes))
-        for point in merging_nodes:
+        for point in sorted_merging_nodes:
             new_key[point] = sorted_merging_nodes
-            if point in key_lookup:
-                # This is a change to an existing node.
-                # Update the neighbours to point to the new node which crosses the border
-                # Update the new node to link to the old nodes
-                # The remaining extra links to the new node will be added below
+            if point in key_lookup and sorted_merging_nodes not in nodes_which_overlap_the_border:
+                nodes_which_overlap_the_border.add(sorted_merging_nodes)
+                nodes_and_points_to_fix.append((sorted_merging_nodes, point))
 
-                old_node_key = key_lookup[point]
-                old_neighbours = graph[old_node_key]
-                for neighbour in old_neighbours:
-                    graph[neighbour] = replace_tuple_value(graph[neighbour], old_node_key, sorted_merging_nodes)
+    for node_key, point in nodes_and_points_to_fix:
+        # This is a change to an existing node.
+        # Update the neighbours to point to the new node which crosses the border
+        # Update the new node to link to the old nodes
+        # The remaining extra links to the new node will be added below
+        old_node_key = key_lookup[point]
+        old_neighbours = graph[old_node_key]
+        assert node_key != old_node_key, "This is a pointless change which should be avoided"
+        print(f"replacing node size {len(old_node_key)} with new one sized {len(node_key)}")
 
-                # Remove references to the old node
-                del graph[old_node_key]
-                graph [sorted_merging_nodes] = old_neighbours
-                for point in sorted_merging_nodes:
-                    key_lookup[point] = sorted_merging_nodes
+        for neighbour in old_neighbours:
+            graph[neighbour] = replace_tuple_value(graph[neighbour], old_node_key, node_key)
+
+        # Remove references to the old node
+        del graph[old_node_key]
+        graph[node_key] = old_neighbours
+        for point in old_node_key:
+            key_lookup[point] = node_key
 
     # For every point in the new region
     all_keys = [new_key.get(point, (point,)) for point in list(skip_points) + non_skip_points]

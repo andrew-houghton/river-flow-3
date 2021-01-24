@@ -38,8 +38,17 @@ def get_raster(segment):
         height=GRID,
     )
     with rio.open(heights_tif_path) as heights:
-        return heights.read(1, window=window)
+        height_raster = heights.read(1, window=window)
+        # print(height_raster)
+        return height_raster
 
+
+def show_heights(heights, active_segments, grid_size):
+    min_y = min(i[0]*grid_size for i in active_segments)
+    max_y = max((i[0]+1)*grid_size for i in active_segments)
+    min_x = min(i[1]*grid_size for i in active_segments)
+    max_x = max((i[1]+1)*grid_size for i in active_segments)
+    print(heights[min_y:max_y, min_x:max_x])
 
 def trace_and_expand_existing_graph(start_point, end_point):
     start_rowcol = lat_lon_to_row_col(*start_point)
@@ -81,6 +90,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
                 next_segment[0] * GRID : next_segment[0] * GRID + GRID,
                 next_segment[1] * GRID : next_segment[1] * GRID + GRID,
             ] = get_raster(next_segment)
+            show_heights(heights, active_segments, GRID)
             graph = add_segment_to_graph(
                 graph, heights, GRID, next_segment, active_segments
             )
@@ -89,10 +99,9 @@ def trace_and_expand_existing_graph(start_point, end_point):
                 graph, heights, GRID, next_segment, active_segments
             )
             check_flooded_nodes(graph, heights, active_segments, GRID)
+            continue
 
-            key_lookup = {k: key for key in graph.keys() for k in key}
-            next_nodes = graph[current_node]
-
+        print(next_nodes)
         selected_node = min(next_nodes, key=lambda node_key: heights[node_key[0]])
         distance = distance_closest_point(end_rowcol, selected_node)
         closest_finish_node = None

@@ -38,6 +38,9 @@ def check_flooded_nodes(graph, heights, active_segments, grid_size):
     for node_key, neighbours in tqdm(graph.items(), "checking node flooding"):
         current_height = heights[node_key[0]]
         for node in node_key:
+            if node == (10077, 10649):
+                print(heights[node_key[0]])
+                print(node_key)
             assert node not in visited, "Node shouldn't appear twice in graph"
             visited.add(node)
         if not any(
