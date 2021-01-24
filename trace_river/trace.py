@@ -2,7 +2,7 @@ from pyproj import Proj
 from pathlib import Path
 import rasterio as rio
 from matplotlib import pyplot as plt
-from algorithms import flood_added_tile, add_tile_to_graph
+from algorithms import flood_added_segment, add_segment_to_graph
 from pprint import pprint
 from graph_verify import check_equal_height_nodes, check_flooded_nodes
 import numpy as np
@@ -18,7 +18,7 @@ colour_tif_path = (
     Path(__name__).absolute().parent.parent.joinpath("tasmania", "colour.tif")
 )
 TIF_MAX_DIMENSIONS = (30978, 30978)
-GRID = 100
+GRID = 5
 assert heights_tif_path.exists()
 
 
@@ -46,7 +46,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
     end_rowcol = lat_lon_to_row_col(*end_point)
 
     next_segment = (start_rowcol[0] // GRID, start_rowcol[1] // GRID)
-    print(f"Starting with tile {next_segment}")
+    print(f"Starting with segment {next_segment}")
     active_segments = [next_segment]
     heights = np.zeros(TIF_MAX_DIMENSIONS)
     heights[
@@ -55,9 +55,9 @@ def trace_and_expand_existing_graph(start_point, end_point):
     ] = get_raster(next_segment)
 
     graph = defaultdict(list)
-    graph = add_tile_to_graph(graph, heights, GRID, next_segment, active_segments)
+    graph = add_segment_to_graph(graph, heights, GRID, next_segment, active_segments)
     check_equal_height_nodes(graph, heights, active_segments, GRID)
-    graph = flood_added_tile(graph, heights, GRID, next_segment, active_segments)
+    graph = flood_added_segment(graph, heights, GRID, next_segment, active_segments)
     check_flooded_nodes(graph, heights, active_segments, GRID)
 
     key_lookup = {k: key for key in graph.keys() for k in key}
@@ -75,18 +75,21 @@ def trace_and_expand_existing_graph(start_point, end_point):
             GRID,
         )
         if next_segment:
-            print(f"Adding tile {next_segment}")
+            print(f"Adding segment {next_segment}")
             active_segments.append(next_segment)
             heights[
                 next_segment[0] * GRID : next_segment[0] * GRID + GRID,
                 next_segment[1] * GRID : next_segment[1] * GRID + GRID,
             ] = get_raster(next_segment)
-            graph = add_tile_to_graph(
+            graph = add_segment_to_graph(
                 graph, heights, GRID, next_segment, active_segments
             )
-            graph = flood_added_tile(
+            check_equal_height_nodes(graph, heights, active_segments, GRID)
+            graph = flood_added_segment(
                 graph, heights, GRID, next_segment, active_segments
             )
+            check_flooded_nodes(graph, heights, active_segments, GRID)
+
             key_lookup = {k: key for key in graph.keys() for k in key}
             next_nodes = graph[current_node]
 
@@ -146,20 +149,6 @@ def distance_closest_point(end, node_key):
     return min(abs(end[0] - x[0]) + abs(end[1] - x[1]) for x in node_key)
 
 
-# TODO figure out a neater version of the algorithm which just expands the area
-# When stitching on a new segment to the graph;
-# equal height nodes should be merged
-# flooding should occur for any low points which remain in the graph (pretty sure this is satisfactory)
-# Things to POC:
-# - Does stitching maintain the desired properties of the graph
-# To test we should be able to assert that the from 2 joined sections is the same as
-# the original graph made from doing both sections at once
-# - Can we find the edges easily?
-# - Can we make a memory efficient storage for heights and display this in matplotlib?
-# - Can we add sections to this height storage?
-# - Can the algorithm easily index from 0?
-
-
 # TODO instead of using the center point use a search to generate a continous path through the merged node
 # When finding the final path:
 # Store the exact entry point from the previous node.
@@ -202,6 +191,8 @@ if __name__ == "__main__":
     end_point = (-41.62953442116648, 145.7696457139196)  # Vale takeout
     # start_point = (-42.229119247079964, 145.81054340737677)  # Franklin putin
     # end_point = (-42.285970802829496, 145.74782103623605)  # Franklin midway
+    # from ipdb import launch_ipdb_on_exception
+    # with launch_ipdb_on_exception():
     path, heights = trace_and_expand_existing_graph(start_point, end_point)
     measure_distance(path)
     elevation_profile(path, heights)

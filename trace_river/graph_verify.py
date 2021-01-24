@@ -38,12 +38,21 @@ def check_flooded_nodes(graph, heights, active_segments, grid_size):
     for node_key, neighbours in tqdm(graph.items(), "checking node flooding"):
         current_height = heights[node_key[0]]
         for node in node_key:
+            assert node not in visited, "Node shouldn't appear twice in graph"
             visited.add(node)
         if not any(
             does_node_touch_border(active_segments, grid_size, point)
             for point in node_key
         ):
             # This node should not have lower height neighbours
+            if not any(
+                heights[neighbour[0]] < current_height for neighbour in neighbours
+            ):
+                for neighbour in neighbours:
+                    print(heights[neighbour[0]], current_height)
+                    print(node_key)
+                    print(neighbour)
+                    # If node_key and neighbour share values
             assert any(
                 heights[neighbour[0]] < current_height for neighbour in neighbours
             ), "A neighbour must be lower"

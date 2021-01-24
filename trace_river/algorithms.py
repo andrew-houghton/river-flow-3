@@ -19,10 +19,16 @@ def get_points_in_segment(segment, grid_size):
     ]
 
 
-def add_tile_to_graph(graph, heights, grid_size, added_segment, active_segments):
+def replace_tuple_value(original, old, new):
+    return list(i for i in original if i != old) + [new,]
+
+
+def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segments):
+    print(f"Adding segment {added_segment[0]*grid_size}, {added_segment[1]*grid_size}. Size {grid_size}")
     node_merge_operations = []
     skip_points = set()
     non_skip_points = []
+    key_lookup = {k: key for key in graph.keys() for k in key}
 
     for point in tqdm(
         get_points_in_segment(added_segment, grid_size),
@@ -55,25 +61,47 @@ def add_tile_to_graph(graph, heights, grid_size, added_segment, active_segments)
         node_merge_operations, desc="Formatting node keys for merged nodes"
     ):
         sorted_merging_nodes = tuple(sorted(merging_nodes))
-        for node in merging_nodes:
-            new_key[node] = sorted_merging_nodes
+        for point in merging_nodes:
+            new_key[point] = sorted_merging_nodes
+            if point in key_lookup:
+                # This is a change to an existing node.
+                # Update the neighbours to point to the new node which crosses the border
+                # Update the new node to link to the old nodes
+                # The remaining extra links to the new node will be added below
 
-    for point in tqdm(
-        sorted(list(skip_points) + non_skip_points),
-        desc="Assembling graph data structure",
-    ):
-        node_key = new_key.get(point, (point,))
+                old_node_key = key_lookup[point]
+                old_neighbours = graph[old_node_key]
+                for neighbour in old_neighbours:
+                    graph[neighbour] = replace_tuple_value(graph[neighbour], old_node_key, sorted_merging_nodes)
 
-        adjacent_nodes = get_adjacent_nodes(grid_size, active_segments, *point)
-        for adjacent_point in adjacent_nodes:
-            adjacent_node_key = new_key.get(adjacent_point, (adjacent_point,))
-            if adjacent_node_key != node_key:
-                if adjacent_node_key not in graph[node_key]:
-                    graph[node_key].append(adjacent_node_key)
-                if node_key not in graph[adjacent_node_key]:
-                    graph[adjacent_node_key].append(node_key)
+                # Remove references to the old node
+                del graph[old_node_key]
+                graph [sorted_merging_nodes] = old_neighbours
+                for point in sorted_merging_nodes:
+                    key_lookup[point] = sorted_merging_nodes
 
-    return dict(graph)
+    # For every point in the new region
+    all_keys = [new_key.get(point, (point,)) for point in list(skip_points) + non_skip_points]
+    for node_key in tqdm(all_keys, desc="Assembling graph data structure"):
+        for point in node_key:
+            adjacent_points = get_adjacent_nodes(grid_size, active_segments, *point)
+            for adjacent_point in adjacent_points:
+                if adjacent_point in key_lookup:
+                    # adjacent_point is included in the graph
+                    adjacent_node = key_lookup[adjacent_point]
+                elif adjacent_point in new_key:
+                    # adjacent_point is in a newly created merged node
+                    adjacent_node = new_key[adjacent_point]
+                else:
+                    # adjacent_point is a newly created sigle point node
+                    adjacent_node = (adjacent_point,)
+
+                if node_key not in graph[adjacent_node]:
+                    graph[adjacent_node].append(node_key)
+                if adjacent_node not in graph[node_key]:
+                    graph[node_key].append(adjacent_node)
+
+    return graph
 
 
 def does_node_touch_border(active_segments, grid_size, point):
@@ -87,8 +115,23 @@ def does_node_touch_border(active_segments, grid_size, point):
         return True
     return False
 
+def generate_existing_points_touching_new_segment(grid_size, added_segment, active_segments):
+    output = []
+    if (added_segment[0]-1, added_segment[1]) in active_segments:
+        # segment above
+        output += [(added_segment[0]*grid_size-1, added_segment[1]*grid_size+i) for i in range(grid_size)]
+    if (added_segment[0]+1, added_segment[1]) in active_segments:
+        # segment below
+        output += [((added_segment[0]+1)*grid_size, added_segment[1]*grid_size+i) for i in range(grid_size)]
+    if (added_segment[0], added_segment[1]-1) in active_segments:
+        # segment left
+        output += [(added_segment[0]*grid_size+i, added_segment[1]*grid_size-1) for i in range(grid_size)]
+    if (added_segment[0], added_segment[1]+1) in active_segments:
+        output += [(added_segment[0]*grid_size+i, (added_segment[1]+1)*grid_size) for i in range(grid_size)]
+    return output
 
-def flood_added_tile(graph, heights, grid_size, added_segment, active_segments):
+
+def flood_added_segment(graph, heights, grid_size, added_segment, active_segments):
     low_nodes = []
 
     # print("Creating node lookup")
@@ -100,6 +143,11 @@ def flood_added_tile(graph, heights, grid_size, added_segment, active_segments):
         for point in get_points_in_segment(added_segment, grid_size)
         for adjacent_point in get_adjacent_nodes(grid_size, active_segments, *point)
     }
+
+    existing_points_which_could_be_low = generate_existing_points_touching_new_segment(grid_size, added_segment, active_segments)
+    existing_nodes_which_could_be_low = [key_lookup[point] for point in existing_points_which_could_be_low]
+    nodes_which_could_be_low_points.update(existing_nodes_which_could_be_low)
+
     for node_key in tqdm(
         nodes_which_could_be_low_points, desc="Checking for low nodes"
     ):
