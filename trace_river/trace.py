@@ -2,7 +2,7 @@ from pyproj import Proj
 from pathlib import Path
 import rasterio as rio
 from matplotlib import pyplot as plt
-from algorithms import flood_low_points, add_tile_to_graph
+from algorithms import flood_added_tile, add_tile_to_graph
 from pprint import pprint
 from graph_verify import check_equal_height_nodes, check_flooded_nodes
 import numpy as np
@@ -53,6 +53,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
     ] = get_raster(starting_segment)
 
     graph = add_tile_to_graph(heights, GRID, starting_segment, active_segments)
+    # check_equal_height_nodes(heights, graph, active_segments, GRID)
     graph = flood_added_tile(graph, heights)
 
     key_lookup = {k: key for key in graph.keys() for k in key}

@@ -1,8 +1,8 @@
-from algorithms import get_adjacent_nodes, does_node_touch_border
+from algorithms import get_adjacent_nodes, does_node_touch_border, get_points_in_segment
 from tqdm import tqdm
 
 
-def check_equal_height_nodes(heights, graph):
+def check_equal_height_nodes(heights, graph, active_segments, grid_size):
     # For every node check that it's connected to it's equal height neighbours
     # and adjacent to it's different height neighbours
     # Also check that all expected nodes are included
@@ -10,7 +10,7 @@ def check_equal_height_nodes(heights, graph):
     visited = set()
     for point, node_key in tqdm(key_lookup.items(), desc="Checking node connections"):
         visited.add(point)
-        for neighbour in get_adjacent_nodes(heights, *point):
+        for neighbour in get_adjacent_nodes(grid_size, active_segments, *point):
             if heights[point] == heights[neighbour]:
                 assert (
                     key_lookup[neighbour] == node_key
@@ -22,7 +22,9 @@ def check_equal_height_nodes(heights, graph):
                 ), "Neighbour node should be connected in graph"
 
     expected_visited = {
-        (x, y) for x in range(heights.shape[0]) for y in range(heights.shape[1])
+        point
+        for segment in active_segments
+        for point in get_points_in_segment(segment, grid_size)
     }
     assert expected_visited == visited, "Every node should be visited"
 
