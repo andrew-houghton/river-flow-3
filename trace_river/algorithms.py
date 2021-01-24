@@ -3,10 +3,10 @@ from collections import defaultdict
 import heapq
 
 
-def get_adjacent_nodes(grid_size, active_segments, x, y):
+def get_adjacent_nodes(grid_size, active_segments, y, x):
     output = []
-    for point in ((x, y - 1), (x, y + 1), (x - 1, y), (x + 1, y)):
-        point_segment = x // grid_size, y // grid_size
+    for point in ((y, x - 1), (y, x + 1), (y - 1, x), (y + 1, x)):
+        point_segment = point[0] // grid_size, point[1] // grid_size
         if point_segment in active_segments:
             output.append(point)
     return output
@@ -66,7 +66,10 @@ def add_tile_to_graph(heights, grid_size, added_segment, active_segments):
         for adjacent_point in adjacent_nodes:
             adjacent_node_key = new_key.get(adjacent_point, (adjacent_point,))
             if adjacent_node_key != node_key:
-                graph[node_key].append(adjacent_node_key)
+                if adjacent_node_key not in graph[node_key]:
+                    graph[node_key].append(adjacent_node_key)
+                if node_key not in graph[adjacent_node_key]:
+                    graph[adjacent_node_key].append(node_key)
 
     return dict(graph)
 

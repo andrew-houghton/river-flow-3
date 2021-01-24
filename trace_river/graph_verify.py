@@ -34,14 +34,12 @@ def check_flooded_nodes(heights, graph):
     # or higher than all it's neighbours
     # nodes which do touch the border should have no outflow nodes
     # check no nodes are missing
-    expected_visited = {
-        (x, y) for x in range(heights.shape[0]) for y in range(heights.shape[1])
-    }
     visited = set()
     for node_key, neighbours in tqdm(graph.items(), "checking node flooding"):
         current_height = heights[node_key[0]]
         for node in node_key:
             visited.add(node)
+        assert False, "Update does_node_touch_border function first"
         if not any(does_node_touch_border(heights.shape, node) for node in node_key):
             # This node should not have lower height neighbours
             assert any(
@@ -52,4 +50,9 @@ def check_flooded_nodes(heights, graph):
                 len(graph[node_key]) == 0
             ), "Nodes which touch the border are dead ends"
 
+    expected_visited = {
+        point
+        for segment in active_segments
+        for point in get_points_in_segment(segment, grid_size)
+    }
     assert expected_visited == visited, "Every node should be visited"

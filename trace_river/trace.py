@@ -53,8 +53,9 @@ def trace_and_expand_existing_graph(start_point, end_point):
     ] = get_raster(starting_segment)
 
     graph = add_tile_to_graph(heights, GRID, starting_segment, active_segments)
-    # check_equal_height_nodes(heights, graph, active_segments, GRID)
+    check_equal_height_nodes(heights, graph, active_segments, GRID)
     graph = flood_added_tile(graph, heights)
+    check_flooded_nodes(heights, graph, active_segments, GRID)
 
     key_lookup = {k: key for key in graph.keys() for k in key}
     path = [key_lookup[start_window_rowcol]]
@@ -163,89 +164,6 @@ def distance_closest_point(end, node_key):
 # Surface edge is 2 units, deepest edge is one unit
 # Find the shortest path from the entry node to the exit node.
 # If there are multiple exit nodes then consider them all to be equal weight.
-
-
-def enlarge_bounding_box_until_path_is_found(start_rowcol, end_rowcol, size_factors):
-
-    window = generate_bounding_box(start_rowcol, end_rowcol, size_factors)
-    start_window_rowcol = apply_window_to_rowcol(window, start_rowcol)
-    end_window_rowcol = apply_window_to_rowcol(window, end_rowcol)
-
-    height_raster = get_raster(window)
-
-    graph = convert_to_graph(height_raster)
-    # check_equal_height_nodes(height_raster, graph)
-    graph = flood_low_points(graph, height_raster)
-    # check_flooded_nodes(height_raster, graph)
-
-    key_lookup = {k: key for key in graph.keys() for k in key}
-    path = [key_lookup[start_window_rowcol]]
-    for i in range(2000):
-        current_point = path[-1]
-        next_points = graph[current_point]
-        if len(next_points) == 0:
-            size_factors = detect_edge_touch(
-                height_raster.shape, current_point, size_factors
-            )
-            print(f"Restarting with size factors {size_factors}")
-            show_plot(
-                height_raster,
-                start_window_rowcol,
-                end_window_rowcol,
-                find_centerpoint(current_point),
-                path,
-            )
-            return enlarge_bounding_box_until_path_is_found(
-                start_rowcol, end_rowcol, size_factors
-            )
-
-        selected_point = min(
-            next_points, key=lambda node_key: height_raster[node_key[0]]
-        )
-        path.append(selected_point)
-
-        close_point, distance = distance_closest_point(
-            end_window_rowcol, selected_point
-        )
-        if distance < 5:
-            break
-    else:
-        # Reached path length limit and gave up
-        return []
-
-    print(f"Solution found with {distance=}")
-    show_plot(height_raster, start_window_rowcol, end_window_rowcol, close_point, path)
-    return path, height_raster
-
-
-def generate_bounding_box(start_rowcol, end_rowcol, size_factors):
-    # Generate a box which encloses the start and end point
-    # Size factors stores where the bounding box needs to be larger than normal
-
-    center_y = (start_rowcol[0] + end_rowcol[0]) // 2
-    center_x = (start_rowcol[1] + end_rowcol[1]) // 2
-
-    longest_dimension = max(
-        abs(end_rowcol[0] - start_rowcol[0]), abs(end_rowcol[1] - start_rowcol[1])
-    )
-    edge_to_center = longest_dimension / 2
-
-    top = int(max(0, center_y - edge_to_center * size_factors[0]))
-    bottom = int(
-        min(TIF_MAX_DIMENSIONS[0] - 1, center_y + edge_to_center * size_factors[1])
-    )
-    left = int(max(0, center_x - edge_to_center * size_factors[2]))
-    right = int(
-        min(TIF_MAX_DIMENSIONS[0] - 1, center_x + edge_to_center * size_factors[3])
-    )
-    # print(top, bottom, left, right, right - left, bottom - top)
-
-    return rio.windows.Window(
-        col_off=left,
-        row_off=top,
-        width=right - left,
-        height=bottom - top,
-    )
 
 
 def measure_distance(path):
