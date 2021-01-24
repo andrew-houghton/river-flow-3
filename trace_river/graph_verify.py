@@ -2,6 +2,14 @@ from algorithms import get_adjacent_nodes, does_node_touch_border, get_points_in
 from tqdm import tqdm
 
 
+def do_keys_overlap(graph):
+    visited = set()
+    for node in graph:
+        for point in node:
+            assert point not in visited, "Points should appear only once in graph"
+        visited.update(node)
+
+
 def check_equal_height_nodes(graph, heights, active_segments, grid_size):
     # For every node check that it's connected to it's equal height neighbours
     # and adjacent to it's different height neighbours
@@ -38,9 +46,6 @@ def check_flooded_nodes(graph, heights, active_segments, grid_size):
     for node_key, neighbours in tqdm(graph.items(), "checking node flooding"):
         current_height = heights[node_key[0]]
         for node in node_key:
-            if node == (10077, 10649):
-                print(heights[node_key[0]])
-                print(node_key)
             assert node not in visited, "Node shouldn't appear twice in graph"
             visited.add(node)
         if not any(

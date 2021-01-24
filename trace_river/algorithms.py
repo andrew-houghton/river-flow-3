@@ -1,7 +1,6 @@
 from tqdm import tqdm
 import heapq
 
-
 def get_adjacent_nodes(grid_size, active_segments, y, x):
     output = []
     for point in ((y, x - 1), (y, x + 1), (y - 1, x), (y + 1, x)):
@@ -40,7 +39,6 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
     non_skip_points = []
     key_lookup = {k: key for key in graph.keys() for k in key}
 
-    count_graph(graph)
     for point in tqdm(
         get_points_in_segment(added_segment, grid_size),
         desc="Finding equal height nodes via BFS",
@@ -99,6 +97,15 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
         for point in old_node_key:
             key_lookup[point] = node_key
 
+        # wipe old_node_key from the face of the earth
+        assert old_node_key not in graph
+        for j, i in graph.items():
+            if old_node_key in i:
+                print(j)
+                print(j in old_neighbours)
+                # This seems to be a one directional connection which should be impossible
+            assert old_node_key not in i, "Something is still attached to old_node_key"
+
     # For every point in the new region
     all_keys = [new_key.get(point, (point,)) for point in list(skip_points) + non_skip_points]
     for node_key in tqdm(all_keys, desc="Assembling graph data structure"):
@@ -114,10 +121,13 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
                 else:
                     # adjacent_point is a newly created sigle point node
                     adjacent_node = (adjacent_point,)
-
-                if node_key not in graph[adjacent_node]:
+                if adjacent_node not in graph:
+                    graph[adjacent_node] = [node_key]
+                elif node_key not in graph[adjacent_node]:
                     graph[adjacent_node].append(node_key)
-                if adjacent_node not in graph[node_key]:
+                if node_key not in graph:
+                    graph[node_key] = [adjacent_node]
+                elif adjacent_node not in graph[node_key]:
                     graph[node_key].append(adjacent_node)
 
     return graph

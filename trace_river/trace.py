@@ -6,7 +6,7 @@ from algorithms import flood_added_segment, add_segment_to_graph
 from pprint import pprint
 from graph_verify import check_equal_height_nodes, check_flooded_nodes
 import numpy as np
-from collections import defaultdict
+from graph_verify import do_keys_overlap
 
 
 proj_string = "+proj=utm +zone=55 +south +datum=WGS84 +units=m +no_defs"
@@ -63,7 +63,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
         next_segment[1] * GRID : next_segment[1] * GRID + GRID,
     ] = get_raster(next_segment)
 
-    graph = defaultdict(list)
+    graph = {}
     graph = add_segment_to_graph(graph, heights, GRID, next_segment, active_segments)
     check_equal_height_nodes(graph, heights, active_segments, GRID)
     graph = flood_added_segment(graph, heights, GRID, next_segment, active_segments)
@@ -71,19 +71,23 @@ def trace_and_expand_existing_graph(start_point, end_point):
 
     key_lookup = {k: key for key in graph.keys() for k in key}
     path = [key_lookup[start_rowcol]]
+    assert key_lookup[start_rowcol] in graph
 
     closest_finish_point = None
     finish_point_threshold = 10
 
     for i in range(10000):
         current_node = path[-1]
+        current_node = key_lookup[current_node[0]]
         next_nodes = graph[current_node]
         next_segment = detect_edge_touch(
             current_node,
             active_segments,
             GRID,
         )
+
         if next_segment:
+            do_keys_overlap(graph)
             print(f"Adding segment {next_segment}")
             active_segments.append(next_segment)
             heights[
@@ -99,6 +103,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
                 graph, heights, GRID, next_segment, active_segments
             )
             check_flooded_nodes(graph, heights, active_segments, GRID)
+            key_lookup = {k: key for key in graph.keys() for k in key}
             continue
 
         print(next_nodes)
