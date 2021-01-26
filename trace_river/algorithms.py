@@ -104,7 +104,7 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
                 print(j)
                 print(j in old_neighbours)
                 # This seems to be a one directional connection which should be impossible
-            assert old_node_key not in i, "Something is still attached to old_node_key"
+            assert old_node_key not in i, "Something is still attached to old_node_key. fix one way connections (maybe at dict class level)"
 
     # For every point in the new region
     all_keys = [new_key.get(point, (point,)) for point in list(skip_points) + non_skip_points]
