@@ -7,7 +7,7 @@ from pprint import pprint
 from graph_verify import check_equal_height_nodes, check_flooded_nodes
 import numpy as np
 from graph_verify import do_keys_overlap
-
+from graph import Graph
 
 proj_string = "+proj=utm +zone=55 +south +datum=WGS84 +units=m +no_defs"
 proj = Proj(proj_string)
@@ -57,13 +57,13 @@ def trace_and_expand_existing_graph(start_point, end_point):
     next_segment = (start_rowcol[0] // GRID, start_rowcol[1] // GRID)
     print(f"Starting with segment {next_segment}")
     active_segments = [next_segment]
-    heights = np.zeros(TIF_MAX_DIMENSIONS)
+    heights = np.zeros(TIF_MAX_DIMENSIONS, dtype=np.int16)
     heights[
         next_segment[0] * GRID : next_segment[0] * GRID + GRID,
         next_segment[1] * GRID : next_segment[1] * GRID + GRID,
     ] = get_raster(next_segment)
 
-    graph = {}
+    graph = Graph()
     graph = add_segment_to_graph(graph, heights, GRID, next_segment, active_segments)
     check_equal_height_nodes(graph, heights, active_segments, GRID)
     graph = flood_added_segment(graph, heights, GRID, next_segment, active_segments)

@@ -1,12 +1,13 @@
 from collections import UserDict
 
 
-# Keys are tuples
-# Values are lists of tuples (which match existing keys)
-# When deleting a key go through all the nodes listed in the value and edit them
-
-
 class Graph(UserDict):
+    """Graph for holding which points are merged and connected
+    Keys are tuple of tuples eg ((1,2), (2,2))
+    Values are lists of keys eg [((1,2), (2,2)), ((4,2), (1,4))]
+    Relationships should be maintained in both directions
+    """
+
     def __delitem__(self, key):
         for neighbour in self[key]:
             old_neighbour_value = self[neighbour]
