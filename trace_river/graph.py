@@ -19,12 +19,15 @@ class Graph(UserDict):
         super().__delitem__(key)
 
     def __setitem__(self, key, value):
+        assert key not in value
         for neighbour in value:
             old_neighbour_value = self.get(neighbour, [])
-            super().__setitem__(neighbour, old_neighbour_value + [key,])
+            if key not in old_neighbour_value:
+                super().__setitem__(neighbour, old_neighbour_value + [key,])
         super().__setitem__(key, value)
 
     def add_neighbour(self, key, neighbour):
+        assert key != neighbour
         if key in self:
             self[key].append(neighbour)
             old_neighbour_value = self.get(neighbour, [])

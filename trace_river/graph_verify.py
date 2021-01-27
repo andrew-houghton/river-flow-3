@@ -22,12 +22,12 @@ def check_equal_height_nodes(graph, heights, active_segments, grid_size):
             if heights[point] == heights[neighbour]:
                 assert (
                     key_lookup[neighbour] == node_key
-                ), f"Adjacent equal height should be merged. {point} {heights[neighbour]} {neighbour} {heights[point]} {node_key} {key_lookup[neighbour]}"
+                ), f"Adjacent equal height should be merged.\n{point=}\n{heights[neighbour]=}\n{neighbour=}\n{heights[point]=}\n{node_key=}\n{key_lookup[neighbour]=}"
             else:
                 touching_nodes = {j for i in graph[node_key] for j in i}
                 assert (
                     neighbour in touching_nodes
-                ), "Neighbour node should be connected in graph"
+                ), f"Neighbour node should be connected in graph.\n{point=}\n{neighbour=}\n{node_key=}\n{graph[node_key]}"
 
     expected_visited = {
         point

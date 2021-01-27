@@ -38,9 +38,7 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
     node_merge_operations = []
     skip_points = set()
     non_skip_points = []
-    key_lookup = {k: key for key in graph.keys() for k in key}
 
-    # show_heights(heights, graph, active_segments, grid_size)
     for point in tqdm(
         get_points_in_segment(added_segment, grid_size),
         desc="Finding equal height nodes via BFS",
@@ -67,24 +65,35 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
             else:
                 non_skip_points.append(point)
 
-    new_key = {}
-    for merging_nodes in tqdm(
-        node_merge_operations, desc="Formatting node keys for merged nodes"
-    ):
-        sorted_merging_nodes = tuple(sorted(merging_nodes))
-        for point in sorted_merging_nodes:
-            new_key[point] = sorted_merging_nodes
-            if point in key_lookup and key_lookup[point] in graph:
-                del graph[key_lookup[point]]
+    # We have all the node merge operations
+    key_lookup = {k: key for key in graph.keys() for k in key}
+    node_merge_operations = [tuple(sorted(i)) for i in node_merge_operations]
 
-    # For every point in the new region
-    all_keys = [new_key.get(point, (point,)) for point in list(skip_points) + non_skip_points]
-    for node_key in tqdm(all_keys, desc="Assembling graph data structure"):
+    # Clear out any existing points on the graph which include these points
+    # Update key lookup to use the new node_keys
+    for node_key in node_merge_operations:
+        assert node_key not in graph, "Node merging operation not required if merged key already exists"
+        for point in node_key:
+            if key_lookup.get(point) in graph:
+                del graph[key_lookup[point]]
+            key_lookup[point] = node_key
+
+    isolated_new_points = set(get_points_in_segment(added_segment, grid_size))
+    isolated_new_points -= {j for i in node_merge_operations for j in i}
+    new_nodes_to_add = node_merge_operations + [(i,) for i in isolated_new_points]
+
+    # Now go through each new node
+    # Find it's neighbours
+    # Create entries in the graph which link the neighbours
+    for node_key in new_nodes_to_add:
+        neighbours = []
         for point in node_key:
             adjacent_points = get_adjacent_nodes(grid_size, active_segments, *point)
             for adjacent_point in adjacent_points:
-                adjacent_node = new_key.get(adjacent_point, (adjacent_point,))
-                graph.add_neighbour(node_key, adjacent_node)
+                if adjacent_point not in node_key:
+                    neighbours.append(key_lookup.get(adjacent_point, (adjacent_point,)))
+        graph[node_key] = neighbours
+    show_heights(heights, graph, active_segments, grid_size)
 
     return graph
 
@@ -210,11 +219,12 @@ def flood_added_segment(graph, heights, grid_size, added_segment, active_segment
         neighbours = {
             node for merging_node in merging_nodes for node in graph[merging_node]
         } - set(merging_nodes)
+
         for neighbour in neighbours:
             updated_neighbours = set(graph[neighbour]) - merging_nodes
             updated_neighbours.add(merged_node_key)
-            graph[neighbour] = tuple(sorted(updated_neighbours))
-        graph[merged_node_key] = tuple(sorted(neighbours))
+            graph[neighbour] = list(updated_neighbours)
+        graph[merged_node_key] = list(neighbours)
         heights[merged_node_key[0]] = lake_height
 
         for merging_node in merging_nodes:
