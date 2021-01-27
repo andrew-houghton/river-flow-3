@@ -78,7 +78,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
     graph = Graph()
     graph = add_segment_to_graph(graph, heights, GRID, next_segment, active_segments)
     # check_equal_height_nodes(graph, heights, active_segments, GRID)
-    graph = flood_added_segment(graph, heights, GRID, next_segment, active_segments)
+    graph, heights = flood_added_segment(graph, heights, GRID, next_segment, active_segments)
     # check_flooded_nodes(graph, heights, active_segments, GRID)
 
     key_lookup = {k: key for key in graph.keys() for k in key}
@@ -88,6 +88,8 @@ def trace_and_expand_existing_graph(start_point, end_point):
     closest_finish_point = None
     finish_point_threshold = 10
 
+    plt.ion()
+    plt.show()
     for i in range(10000):
         current_node = path[-1]
         current_node = key_lookup[current_node[0]]
@@ -110,11 +112,12 @@ def trace_and_expand_existing_graph(start_point, end_point):
                 graph, heights, GRID, next_segment, active_segments
             )
             # check_equal_height_nodes(graph, heights, active_segments, GRID)
-            graph = flood_added_segment(
+            graph, heights = flood_added_segment(
                 graph, heights, GRID, next_segment, active_segments
             )
             # check_flooded_nodes(graph, heights, active_segments, GRID)
             key_lookup = {k: key for key in graph.keys() for k in key}
+            show_plot(heights, path, active_segments, GRID, start_rowcol, end_rowcol)
             continue
 
         selected_node = min(next_nodes, key=lambda node_key: heights[node_key[0]])
@@ -158,15 +161,34 @@ def detect_edge_touch(node, active_segments, grid_size):
                 return offset_point_segment
 
 
-def show_plot(heights, start, end, dest, path):
-    plt.imshow(heights)
-    for point in path:
-        point = find_centerpoint(point)
+def show_plot(heights, path, active_segments, grid_size, start, end):
+    min_height = None
+    for segment in active_segments:
+        segment_min = heights[
+            segment[0] * GRID : segment[0] * GRID + GRID,
+            segment[1] * GRID : segment[1] * GRID + GRID,
+        ].min()
+        if min_height is None or segment_min < min_height:
+            min_height = segment_min
+
+    min_y = min(i[0] * grid_size for i in active_segments)
+    max_y = max((i[0] + 1) * grid_size for i in active_segments)
+    min_x = min(i[1] * grid_size for i in active_segments)
+    max_x = max((i[1] + 1) * grid_size for i in active_segments)
+
+    plt.cla()
+    selected_heights = heights[min_y:max_y, min_x:max_x]
+    plt.imshow(selected_heights)
+    plt.clim(min_height, heights.max())
+    for node in path:
+        point = find_centerpoint(node)
+        point = point[0] - min_y, point[1] - min_x
         plt.plot(point[1], point[0], "go")
-    plt.plot(start[1], start[0], "ro")
-    plt.plot(end[1], end[0], "bo")
-    plt.plot(dest[1], dest[0], "yo")
-    plt.show()
+
+    plt.plot(start[1]-min_x, start[0]-min_y, "ro")
+    # plt.plot(end[1]-min_x, end[0]-min_y, "bo")
+    plt.draw()
+    plt.pause(0.001)
 
 
 def distance_closest_point(end, node_key):
@@ -211,10 +233,10 @@ def elevation_profile(path, heights):
 
 
 if __name__ == "__main__":
-    start_point = (-41.55327294639188, 145.87881557530164)  # Vale putin
-    end_point = (-41.62953442116648, 145.7696457139196)  # Vale takeout
-    # start_point = (-42.229119247079964, 145.81054340737677)  # Franklin putin
-    # end_point = (-42.285970802829496, 145.74782103623605)  # Franklin midway
+    # start_point = (-41.55327294639188, 145.87881557530164)  # Vale putin
+    # end_point = (-41.62953442116648, 145.7696457139196)  # Vale takeout
+    start_point = (-42.229119247079964, 145.81054340737677)  # Franklin putin
+    end_point = (-42.285970802829496, 145.74782103623605)  # Franklin midway
     # from ipdb import launch_ipdb_on_exception
     # with launch_ipdb_on_exception():
     path, heights = trace_and_expand_existing_graph(start_point, end_point)

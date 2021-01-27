@@ -179,7 +179,7 @@ def flood_added_segment(graph, heights, grid_size, added_segment, active_segment
             low_nodes.append(node_key)
 
     if not low_nodes:
-        return graph
+        return graph, heights
 
     for low_node in low_nodes:
         if low_node not in graph:
@@ -252,4 +252,4 @@ def flood_added_segment(graph, heights, grid_size, added_segment, active_segment
             del graph[merging_node]
         graph[merged_node_key] = neighbours
 
-    return graph
+    return graph, heights
