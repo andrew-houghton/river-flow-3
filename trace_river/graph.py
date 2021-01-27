@@ -18,7 +18,6 @@ class Graph(UserDict):
         super().__delitem__(key)
 
     def __setitem__(self, key, value):
-        print(key, value)
         for neighbour in value:
             old_neighbour_value = self.get(neighbour, [])
             super().__setitem__(neighbour, old_neighbour_value + [key,])

@@ -22,7 +22,7 @@ def check_equal_height_nodes(graph, heights, active_segments, grid_size):
             if heights[point] == heights[neighbour]:
                 assert (
                     key_lookup[neighbour] == node_key
-                ), "Adjacent equal height should be merged"
+                ), f"Adjacent equal height should be merged. {point} {heights[neighbour]} {neighbour} {heights[point]} {node_key} {key_lookup[neighbour]}"
             else:
                 touching_nodes = {j for i in graph[node_key] for j in i}
                 assert (
@@ -53,13 +53,13 @@ def check_flooded_nodes(graph, heights, active_segments, grid_size):
             for point in node_key
         ):
             # This node should not have lower height neighbours
-            if not any(
-                heights[neighbour[0]] < current_height for neighbour in neighbours
-            ):
-                for neighbour in neighbours:
-                    print(heights[neighbour[0]], current_height)
-                    print(node_key)
-                    print(neighbour)
+            # if not any(
+            #     heights[neighbour[0]] < current_height for neighbour in neighbours
+            # ):
+            #     for neighbour in neighbours:
+            #         print(heights[neighbour[0]], current_height)
+            #         print(node_key)
+            #         print(neighbour)
                     # If node_key and neighbour share values
             assert any(
                 heights[neighbour[0]] < current_height for neighbour in neighbours

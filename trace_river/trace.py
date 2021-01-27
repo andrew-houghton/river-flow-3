@@ -7,7 +7,7 @@ from pprint import pprint
 from graph_verify import check_equal_height_nodes, check_flooded_nodes
 import numpy as np
 from graph_verify import do_keys_overlap
-
+from graph import Graph
 
 proj_string = "+proj=utm +zone=55 +south +datum=WGS84 +units=m +no_defs"
 proj = Proj(proj_string)
@@ -43,12 +43,24 @@ def get_raster(segment):
         return height_raster
 
 
-def show_heights(heights, active_segments, grid_size):
+def show_heights(heights, graph, active_segments, grid_size):
     min_y = min(i[0]*grid_size for i in active_segments)
     max_y = max((i[0]+1)*grid_size for i in active_segments)
     min_x = min(i[1]*grid_size for i in active_segments)
     max_x = max((i[1]+1)*grid_size for i in active_segments)
     print(heights[min_y:max_y, min_x:max_x])
+
+    nodes = np.zeros((max_y-min_y, max_x-min_x), dtype=np.int16)
+    for i, nk in enumerate(graph):
+        for j in nk:
+            nodes[j[0]-min_y, j[1]-min_x] = i
+    # Print with layout matching above numbers
+    for row in range(max_y-min_y):
+        print(' [', end='')
+        for col in range(max_x-min_x):
+            print(f"{nodes[row, col]: <4}", end="")
+        print(']')
+
 
 def trace_and_expand_existing_graph(start_point, end_point):
     start_rowcol = lat_lon_to_row_col(*start_point)
@@ -57,17 +69,19 @@ def trace_and_expand_existing_graph(start_point, end_point):
     next_segment = (start_rowcol[0] // GRID, start_rowcol[1] // GRID)
     print(f"Starting with segment {next_segment}")
     active_segments = [next_segment]
-    heights = np.zeros(TIF_MAX_DIMENSIONS)
+    heights = np.zeros(TIF_MAX_DIMENSIONS, dtype=np.int16)
     heights[
         next_segment[0] * GRID : next_segment[0] * GRID + GRID,
         next_segment[1] * GRID : next_segment[1] * GRID + GRID,
     ] = get_raster(next_segment)
 
-    graph = {}
+    graph = Graph()
     graph = add_segment_to_graph(graph, heights, GRID, next_segment, active_segments)
+    show_heights(heights, graph, active_segments, GRID)
     check_equal_height_nodes(graph, heights, active_segments, GRID)
     graph = flood_added_segment(graph, heights, GRID, next_segment, active_segments)
     check_flooded_nodes(graph, heights, active_segments, GRID)
+    show_heights(heights, graph, active_segments, GRID)
 
     key_lookup = {k: key for key in graph.keys() for k in key}
     path = [key_lookup[start_rowcol]]
@@ -94,10 +108,11 @@ def trace_and_expand_existing_graph(start_point, end_point):
                 next_segment[0] * GRID : next_segment[0] * GRID + GRID,
                 next_segment[1] * GRID : next_segment[1] * GRID + GRID,
             ] = get_raster(next_segment)
-            show_heights(heights, active_segments, GRID)
+            # show_heights(heights, graph, active_segments, GRID)
             graph = add_segment_to_graph(
                 graph, heights, GRID, next_segment, active_segments
             )
+            show_heights(heights, graph, active_segments, GRID)
             check_equal_height_nodes(graph, heights, active_segments, GRID)
             graph = flood_added_segment(
                 graph, heights, GRID, next_segment, active_segments
@@ -106,7 +121,6 @@ def trace_and_expand_existing_graph(start_point, end_point):
             key_lookup = {k: key for key in graph.keys() for k in key}
             continue
 
-        print(next_nodes)
         selected_node = min(next_nodes, key=lambda node_key: heights[node_key[0]])
         distance = distance_closest_point(end_rowcol, selected_node)
         closest_finish_node = None
