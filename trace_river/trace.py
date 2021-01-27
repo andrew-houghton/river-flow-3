@@ -18,7 +18,7 @@ colour_tif_path = (
     Path(__name__).absolute().parent.parent.joinpath("tasmania", "colour.tif")
 )
 TIF_MAX_DIMENSIONS = (30978, 30978)
-GRID = 100
+GRID = 10
 assert heights_tif_path.exists()
 
 
@@ -39,7 +39,6 @@ def get_raster(segment):
     )
     with rio.open(heights_tif_path) as heights:
         height_raster = heights.read(1, window=window)
-        # print(height_raster)
         return height_raster
 
 

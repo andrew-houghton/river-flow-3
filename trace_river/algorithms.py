@@ -42,10 +42,7 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
     skip_points = set()
     non_skip_points = []
 
-    for point in tqdm(
-        get_points_in_segment(added_segment, grid_size),
-        desc="Finding equal height nodes via BFS",
-    ):
+    for point in get_points_in_segment(added_segment, grid_size):
         if point not in skip_points:
             height = heights[point]
             visited, queue = set(), [point]
