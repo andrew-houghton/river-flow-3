@@ -18,7 +18,7 @@ colour_tif_path = (
     Path(__name__).absolute().parent.parent.joinpath("tasmania", "colour.tif")
 )
 TIF_MAX_DIMENSIONS = (30978, 30978)
-GRID = 200
+GRID = 100
 assert heights_tif_path.exists()
 
 
@@ -78,7 +78,9 @@ def trace_and_expand_existing_graph(start_point, end_point):
     graph = Graph()
     graph = add_segment_to_graph(graph, heights, GRID, next_segment, active_segments)
     # check_equal_height_nodes(graph, heights, active_segments, GRID)
-    graph, heights = flood_added_segment(graph, heights, GRID, next_segment, active_segments)
+    graph, heights = flood_added_segment(
+        graph, heights, GRID, next_segment, active_segments
+    )
     # check_flooded_nodes(graph, heights, active_segments, GRID)
 
     key_lookup = {k: key for key in graph.keys() for k in key}
@@ -87,7 +89,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
 
     closest_finish_point = None
     finish_point_threshold = 10
-
+    plt.get_current_fig_manager().full_screen_toggle()
     plt.ion()
     plt.show()
     for i in range(10000):
@@ -101,6 +103,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
         )
 
         if next_segment:
+            show_plot(heights, path, active_segments, GRID, start_rowcol, end_rowcol)
             do_keys_overlap(graph)
             print(f"Adding segment {next_segment}")
             active_segments.append(next_segment)
@@ -117,7 +120,6 @@ def trace_and_expand_existing_graph(start_point, end_point):
             )
             # check_flooded_nodes(graph, heights, active_segments, GRID)
             key_lookup = {k: key for key in graph.keys() for k in key}
-            show_plot(heights, path, active_segments, GRID, start_rowcol, end_rowcol)
             continue
 
         selected_node = min(next_nodes, key=lambda node_key: heights[node_key[0]])
@@ -183,10 +185,12 @@ def show_plot(heights, path, active_segments, grid_size, start, end):
     for node in path:
         point = find_centerpoint(node)
         point = point[0] - min_y, point[1] - min_x
-        plt.plot(point[1], point[0], "go")
+        plt.plot(point[1], point[0], "yo")
 
-    plt.plot(start[1]-min_x, start[0]-min_y, "ro")
-    # plt.plot(end[1]-min_x, end[0]-min_y, "bo")
+    plt.plot(start[1] - min_x, start[0] - min_y, "ro")
+    if (end[0] // grid_size, end[1] // grid_size) in active_segments:
+        plt.plot(end[1] - min_x, end[0] - min_y, "bo")
+
     plt.draw()
     plt.pause(0.001)
 
