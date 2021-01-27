@@ -12,10 +12,7 @@ class Graph(UserDict):
         for neighbour in self[key]:
             old_neighbour_value = self[neighbour]
             updated_value = [i for i in old_neighbour_value if i != key]
-            if updated_value == []:
-                super().__delitem__(neighbour)
-            else:
-                super().__setitem__(neighbour, updated_value)
+            super().__setitem__(neighbour, updated_value)
         super().__delitem__(key)
 
     def __setitem__(self, key, value):
@@ -23,17 +20,8 @@ class Graph(UserDict):
         for neighbour in value:
             old_neighbour_value = self.get(neighbour, [])
             if key not in old_neighbour_value:
-                super().__setitem__(neighbour, old_neighbour_value + [key,])
+                super().__setitem__(neighbour, old_neighbour_value + [key])
         super().__setitem__(key, value)
-
-    def add_neighbour(self, key, neighbour):
-        assert key != neighbour
-        if key in self:
-            self[key].append(neighbour)
-            old_neighbour_value = self.get(neighbour, [])
-            super().__setitem__(neighbour, old_neighbour_value + [key,])
-        else:
-            self[key] = [neighbour]
 
     def __repr__(self):
         return f"{type(self).__name__}{self.data}"

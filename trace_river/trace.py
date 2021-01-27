@@ -106,15 +106,15 @@ def trace_and_expand_existing_graph(start_point, end_point):
                 next_segment[0] * GRID : next_segment[0] * GRID + GRID,
                 next_segment[1] * GRID : next_segment[1] * GRID + GRID,
             ] = get_raster(next_segment)
-            # show_heights(heights, graph, active_segments, GRID)
             graph = add_segment_to_graph(
                 graph, heights, GRID, next_segment, active_segments
             )
-            # show_heights(heights, graph, active_segments, GRID)
             check_equal_height_nodes(graph, heights, active_segments, GRID)
+            show_heights(heights, graph, active_segments, GRID)
             graph = flood_added_segment(
                 graph, heights, GRID, next_segment, active_segments
             )
+            show_heights(heights, graph, active_segments, GRID)
             check_flooded_nodes(graph, heights, active_segments, GRID)
             key_lookup = {k: key for key in graph.keys() for k in key}
             continue

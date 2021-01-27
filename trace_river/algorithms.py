@@ -71,6 +71,7 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
 
     # Clear out any existing points on the graph which include these points
     # Update key lookup to use the new node_keys
+
     for node_key in node_merge_operations:
         assert node_key not in graph, "Node merging operation not required if merged key already exists"
         for point in node_key:
@@ -93,7 +94,6 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
                 if adjacent_point not in node_key:
                     neighbours.append(key_lookup.get(adjacent_point, (adjacent_point,)))
         graph[node_key] = neighbours
-    show_heights(heights, graph, active_segments, grid_size)
 
     return graph
 
@@ -127,10 +127,7 @@ def generate_existing_points_touching_new_segment(grid_size, added_segment, acti
 
 def flood_added_segment(graph, heights, grid_size, added_segment, active_segments):
     low_nodes = []
-
-    # print("Creating node lookup")
     key_lookup = {k: key for key in graph.keys() for k in key}
-    # print("Created node lookup")
 
     nodes_which_could_be_low_points = {
         key_lookup[adjacent_point]
