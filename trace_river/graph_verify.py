@@ -60,7 +60,7 @@ def check_flooded_nodes(graph, heights, active_segments, grid_size):
             #         print(heights[neighbour[0]], current_height)
             #         print(node_key)
             #         print(neighbour)
-                    # If node_key and neighbour share values
+            # If node_key and neighbour share values
             assert any(
                 heights[neighbour[0]] < current_height for neighbour in neighbours
             ), "A neighbour must be lower"

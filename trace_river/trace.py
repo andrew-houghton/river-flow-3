@@ -3,7 +3,6 @@ from pathlib import Path
 import rasterio as rio
 from matplotlib import pyplot as plt
 from algorithms import flood_added_segment, add_segment_to_graph
-from pprint import pprint
 from graph_verify import check_equal_height_nodes, check_flooded_nodes
 import numpy as np
 from graph_verify import do_keys_overlap
@@ -44,22 +43,22 @@ def get_raster(segment):
 
 
 def show_heights(heights, graph, active_segments, grid_size):
-    min_y = min(i[0]*grid_size for i in active_segments)
-    max_y = max((i[0]+1)*grid_size for i in active_segments)
-    min_x = min(i[1]*grid_size for i in active_segments)
-    max_x = max((i[1]+1)*grid_size for i in active_segments)
+    min_y = min(i[0] * grid_size for i in active_segments)
+    max_y = max((i[0] + 1) * grid_size for i in active_segments)
+    min_x = min(i[1] * grid_size for i in active_segments)
+    max_x = max((i[1] + 1) * grid_size for i in active_segments)
     print(heights[min_y:max_y, min_x:max_x])
 
-    nodes = np.zeros((max_y-min_y, max_x-min_x), dtype=np.int16)
+    nodes = np.zeros((max_y - min_y, max_x - min_x), dtype=np.int16)
     for i, nk in enumerate(graph):
         for j in nk:
-            nodes[j[0]-min_y, j[1]-min_x] = i
+            nodes[j[0] - min_y, j[1] - min_x] = i
     # Print with layout matching above numbers
-    for row in range(max_y-min_y):
-        print(' [', end='')
-        for col in range(max_x-min_x):
+    for row in range(max_y - min_y):
+        print(" [", end="")
+        for col in range(max_x - min_x):
             print(f"{nodes[row, col]: <4}", end="")
-        print(']')
+        print("]")
 
 
 def trace_and_expand_existing_graph(start_point, end_point):

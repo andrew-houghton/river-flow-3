@@ -1,6 +1,7 @@
 from tqdm import tqdm
 import heapq
 
+
 def get_adjacent_nodes(grid_size, active_segments, y, x):
     output = []
     for point in ((y, x - 1), (y, x + 1), (y - 1, x), (y + 1, x)):
@@ -29,12 +30,15 @@ def get_points_in_segment(segment, grid_size):
 
 
 def replace_tuple_value(original, old, new):
-    return list(i for i in original if i != old) + [new,]
+    return list(i for i in original if i != old) + [new]
 
 
 def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segments):
     from trace import show_heights
-    print(f"Adding segment {added_segment[0]*grid_size}, {added_segment[1]*grid_size}. Size {grid_size}")
+
+    print(
+        f"Adding segment {added_segment[0]*grid_size}, {added_segment[1]*grid_size}. Size {grid_size}"
+    )
     node_merge_operations = []
     skip_points = set()
     non_skip_points = []
@@ -73,7 +77,9 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
     # Update key lookup to use the new node_keys
 
     for node_key in node_merge_operations:
-        assert node_key not in graph, "Node merging operation not required if merged key already exists"
+        assert (
+            node_key not in graph
+        ), "Node merging operation not required if merged key already exists"
         for point in node_key:
             if key_lookup.get(point) in graph:
                 del graph[key_lookup[point]]
@@ -87,12 +93,12 @@ def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segmen
     # Find it's neighbours
     # Create entries in the graph which link the neighbours
     for node_key in new_nodes_to_add:
-        neighbours = []
+        neighbours = set()
         for point in node_key:
             adjacent_points = get_adjacent_nodes(grid_size, active_segments, *point)
             for adjacent_point in adjacent_points:
                 if adjacent_point not in node_key:
-                    neighbours.append(key_lookup.get(adjacent_point, (adjacent_point,)))
+                    neighbours.add(key_lookup.get(adjacent_point, (adjacent_point,)))
         graph[node_key] = neighbours
 
     return graph
@@ -109,19 +115,34 @@ def does_node_touch_border(active_segments, grid_size, point):
         return True
     return False
 
-def generate_existing_points_touching_new_segment(grid_size, added_segment, active_segments):
+
+def generate_existing_points_touching_new_segment(
+    grid_size, added_segment, active_segments
+):
     output = []
-    if (added_segment[0]-1, added_segment[1]) in active_segments:
+    if (added_segment[0] - 1, added_segment[1]) in active_segments:
         # segment above
-        output += [(added_segment[0]*grid_size-1, added_segment[1]*grid_size+i) for i in range(grid_size)]
-    if (added_segment[0]+1, added_segment[1]) in active_segments:
+        output += [
+            (added_segment[0] * grid_size - 1, added_segment[1] * grid_size + i)
+            for i in range(grid_size)
+        ]
+    if (added_segment[0] + 1, added_segment[1]) in active_segments:
         # segment below
-        output += [((added_segment[0]+1)*grid_size, added_segment[1]*grid_size+i) for i in range(grid_size)]
-    if (added_segment[0], added_segment[1]-1) in active_segments:
+        output += [
+            ((added_segment[0] + 1) * grid_size, added_segment[1] * grid_size + i)
+            for i in range(grid_size)
+        ]
+    if (added_segment[0], added_segment[1] - 1) in active_segments:
         # segment left
-        output += [(added_segment[0]*grid_size+i, added_segment[1]*grid_size-1) for i in range(grid_size)]
-    if (added_segment[0], added_segment[1]+1) in active_segments:
-        output += [(added_segment[0]*grid_size+i, (added_segment[1]+1)*grid_size) for i in range(grid_size)]
+        output += [
+            (added_segment[0] * grid_size + i, added_segment[1] * grid_size - 1)
+            for i in range(grid_size)
+        ]
+    if (added_segment[0], added_segment[1] + 1) in active_segments:
+        output += [
+            (added_segment[0] * grid_size + i, (added_segment[1] + 1) * grid_size)
+            for i in range(grid_size)
+        ]
     return output
 
 
@@ -135,19 +156,22 @@ def flood_added_segment(graph, heights, grid_size, added_segment, active_segment
         for adjacent_point in get_adjacent_nodes(grid_size, active_segments, *point)
     }
 
-    existing_points_which_could_be_low = generate_existing_points_touching_new_segment(grid_size, added_segment, active_segments)
-    existing_nodes_which_could_be_low = [key_lookup[point] for point in existing_points_which_could_be_low]
+    existing_points_which_could_be_low = generate_existing_points_touching_new_segment(
+        grid_size, added_segment, active_segments
+    )
+    existing_nodes_which_could_be_low = [
+        key_lookup[point] for point in existing_points_which_could_be_low
+    ]
     nodes_which_could_be_low_points.update(existing_nodes_which_could_be_low)
 
-    for node_key in tqdm(
-        nodes_which_could_be_low_points, desc="Checking for low nodes"
-    ):
+    for node_key in nodes_which_could_be_low_points:
         adjacent_nodes = graph[node_key]
         if any(
             does_node_touch_border(active_segments, grid_size, point)
             for point in node_key
         ):
             continue
+
         height = heights[node_key[0]]
         for adjacent_node_key in adjacent_nodes:
             if height > heights[adjacent_node_key[0]]:
@@ -158,10 +182,9 @@ def flood_added_segment(graph, heights, grid_size, added_segment, active_segment
     if not low_nodes:
         return graph
 
-    for low_node in tqdm(low_nodes, desc="flooding low nodes"):
+    for low_node in low_nodes:
         if low_node not in graph:
             continue
-
         lake_height = heights[low_node[0]]
         for neighbour in graph[low_node]:
             if heights[neighbour[0]] < lake_height:
@@ -210,6 +233,7 @@ def flood_added_segment(graph, heights, grid_size, added_segment, active_segment
                         )
             else:
                 break
+
         merged_node_key = tuple(
             sorted({node for node_key in merging_nodes for node in node_key})
         )
@@ -217,14 +241,18 @@ def flood_added_segment(graph, heights, grid_size, added_segment, active_segment
             node for merging_node in merging_nodes for node in graph[merging_node]
         } - set(merging_nodes)
 
+        # merged_node_key is the new node key. It includes all the nodes in merging_nodes
+        #
+
         for neighbour in neighbours:
-            updated_neighbours = set(graph[neighbour]) - merging_nodes
+            updated_neighbours = graph[neighbour] - merging_nodes
             updated_neighbours.add(merged_node_key)
-            graph[neighbour] = list(updated_neighbours)
-        graph[merged_node_key] = list(neighbours)
+            graph[neighbour] = updated_neighbours
+        graph[merged_node_key] = set(neighbours)
         heights[merged_node_key[0]] = lake_height
 
         for merging_node in merging_nodes:
             del graph[merging_node]
 
+    assert False
     return graph
