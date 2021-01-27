@@ -1,12 +1,13 @@
-from pyproj import Proj
 from pathlib import Path
+
+import numpy as np
 import rasterio as rio
 from matplotlib import pyplot as plt
-from algorithms import flood_added_segment, add_segment_to_graph
-from graph_verify import check_equal_height_nodes, check_flooded_nodes
-import numpy as np
-from graph_verify import do_keys_overlap
+from pyproj import Proj
+
+from algorithms import add_segment_to_graph, flood_added_segment
 from graph import Graph
+from graph_verify import check_equal_height_nodes, check_flooded_nodes, do_keys_overlap
 
 proj_string = "+proj=utm +zone=55 +south +datum=WGS84 +units=m +no_defs"
 proj = Proj(proj_string)

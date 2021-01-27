@@ -1,10 +1,9 @@
-import rasterio as rio
 from pathlib import Path
-from matplotlib import pyplot as plt
-import numpy as np
-from memory_profiler import profile
-from matplotlib import pyplot as plt
 
+import numpy as np
+import rasterio as rio
+from matplotlib import pyplot as plt
+from memory_profiler import profile
 
 heights_tif_path = (
     Path(__name__).absolute().parent.parent.joinpath("tasmania", "heights.tif")

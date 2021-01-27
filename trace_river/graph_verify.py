@@ -1,5 +1,6 @@
-from algorithms import get_adjacent_nodes, does_node_touch_border, get_points_in_segment
 from tqdm import tqdm
+
+from algorithms import does_node_touch_border, get_adjacent_nodes, get_points_in_segment
 
 
 def do_keys_overlap(graph):

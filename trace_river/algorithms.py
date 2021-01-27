@@ -1,5 +1,6 @@
-from tqdm import tqdm
 import heapq
+
+from tqdm import tqdm
 
 
 def get_adjacent_nodes(grid_size, active_segments, y, x):
