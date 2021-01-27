@@ -35,8 +35,6 @@ def replace_tuple_value(original, old, new):
 
 
 def add_segment_to_graph(graph, heights, grid_size, added_segment, active_segments):
-    from trace import show_heights
-
     print(
         f"Adding segment {added_segment[0]*grid_size}, {added_segment[1]*grid_size}. Size {grid_size}"
     )
@@ -238,22 +236,20 @@ def flood_added_segment(graph, heights, grid_size, added_segment, active_segment
         merged_node_key = tuple(
             sorted({node for node_key in merging_nodes for node in node_key})
         )
+        for point in merged_node_key:
+            heights[point] = lake_height
         neighbours = {
-            node for merging_node in merging_nodes for node in graph[merging_node]
+            neighbour
+            for merging_node in merging_nodes
+            for neighbour in graph[merging_node]
         } - set(merging_nodes)
 
         # merged_node_key is the new node key. It includes all the nodes in merging_nodes
-        #
-
-        for neighbour in neighbours:
-            updated_neighbours = graph[neighbour] - merging_nodes
-            updated_neighbours.add(merged_node_key)
-            graph[neighbour] = updated_neighbours
-        graph[merged_node_key] = set(neighbours)
-        heights[merged_node_key[0]] = lake_height
-
+        # Get all the neighbours the new node should have
+        # Delete the old nodes
+        # Add the new node
         for merging_node in merging_nodes:
             del graph[merging_node]
+        graph[merged_node_key] = neighbours
 
-    assert False
     return graph

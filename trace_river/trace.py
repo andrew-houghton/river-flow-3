@@ -18,7 +18,7 @@ colour_tif_path = (
     Path(__name__).absolute().parent.parent.joinpath("tasmania", "colour.tif")
 )
 TIF_MAX_DIMENSIONS = (30978, 30978)
-GRID = 5
+GRID = 200
 assert heights_tif_path.exists()
 
 
@@ -77,9 +77,9 @@ def trace_and_expand_existing_graph(start_point, end_point):
 
     graph = Graph()
     graph = add_segment_to_graph(graph, heights, GRID, next_segment, active_segments)
-    check_equal_height_nodes(graph, heights, active_segments, GRID)
+    # check_equal_height_nodes(graph, heights, active_segments, GRID)
     graph = flood_added_segment(graph, heights, GRID, next_segment, active_segments)
-    check_flooded_nodes(graph, heights, active_segments, GRID)
+    # check_flooded_nodes(graph, heights, active_segments, GRID)
 
     key_lookup = {k: key for key in graph.keys() for k in key}
     path = [key_lookup[start_rowcol]]
@@ -109,13 +109,11 @@ def trace_and_expand_existing_graph(start_point, end_point):
             graph = add_segment_to_graph(
                 graph, heights, GRID, next_segment, active_segments
             )
-            check_equal_height_nodes(graph, heights, active_segments, GRID)
-            show_heights(heights, graph, active_segments, GRID)
+            # check_equal_height_nodes(graph, heights, active_segments, GRID)
             graph = flood_added_segment(
                 graph, heights, GRID, next_segment, active_segments
             )
-            show_heights(heights, graph, active_segments, GRID)
-            check_flooded_nodes(graph, heights, active_segments, GRID)
+            # check_flooded_nodes(graph, heights, active_segments, GRID)
             key_lookup = {k: key for key in graph.keys() for k in key}
             continue
 
