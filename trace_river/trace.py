@@ -18,7 +18,7 @@ colour_tif_path = (
     Path(__name__).absolute().parent.parent.joinpath("tasmania", "colour.tif")
 )
 TIF_MAX_DIMENSIONS = (30978, 30978)
-GRID = 10
+GRID = 500
 assert heights_tif_path.exists()
 
 
@@ -61,6 +61,74 @@ def show_heights(heights, graph, active_segments, grid_size):
         print("]")
 
 
+def align_path(graph, key_lookup, path):
+    already_in_path = set()
+    fixed_path = []
+    for node in path:
+        if node not in graph:
+            new_node = key_lookup[node[0]]
+            if new_node not in already_in_path:
+                already_in_path.add(new_node)
+                fixed_path.append(new_node)
+        else:
+            if node not in already_in_path:
+                already_in_path.add(node)
+                fixed_path.append(node)
+    return fixed_path
+
+
+def find_exit_point(node, dest_node, heights):
+    def get_adjacent_points(point):
+        return [
+            (point[0]-1, point[1]),
+            (point[0]+1, point[1]),
+            (point[0], point[1]-1),
+            (point[0], point[1]+1),
+        ]
+
+    best_point = None
+    best_point_height = None
+    dest_point_set = set(dest_node)
+    for point in node:
+        if any(neighbour in dest_point_set for neighbour in get_adjacent_points(point)):
+            if best_point is None or heights[point] < best_point_height:
+                best_point = point
+                best_point_height = heights[point]
+    assert best_point is not None, "There should be a point which is adjacent to the other node"
+    return best_point
+
+
+def find_point_track(heights, path, start_point, track_data=None):
+    if track_data is None:
+        track_data = {}
+
+    entry_point = start_point
+    for node, dest_node in zip(path, path[1:]):
+        track_key = (entry_point, node, dest_node)
+        if track_key in track_data:
+            # The last point in the previous track is where the next point should start
+            entry_point = track_data[track_key][-1]
+        else:
+            exit_point = find_exit_point(node, dest_node, heights)
+            track = find_deep_path(node, entry_point, exit_point, heights)
+            track_data[track_key] = track
+    return track_data
+
+    # Store the exact entry point from the previous node.
+    # For each lake/ multi-point node encountered create a graph out of the grid where each edge in the grid is shorter if it's deeper.
+    # Surface edge is 2 units, deepest edge is one unit
+    # Find the shortest path from the entry node to the exit node.
+    # If there are multiple exit nodes then consider them all to be equal weight.
+
+    # Rules:
+    # A point track must leave a node at the deepest point which touches the next node
+    # A track must be a continous series of points
+    # The start point must be adjacent to the end of the previous node
+
+    # Data structure:
+    # {(entry point (next to node_key), node_key, destination_node_key): point_track where all the points are within node_key}
+
+
 def trace_and_expand_existing_graph(start_point, end_point):
     start_rowcol = lat_lon_to_row_col(*start_point)
     end_rowcol = lat_lon_to_row_col(*end_point)
@@ -92,8 +160,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
     plt.ion()
     plt.show()
     for i in range(10000):
-        current_node = path[-1]
-        current_node = key_lookup[current_node[0]]
+        current_node = key_lookup[path[-1][0]]
         next_nodes = graph[current_node]
         next_segment = detect_edge_touch(
             current_node,
@@ -119,6 +186,8 @@ def trace_and_expand_existing_graph(start_point, end_point):
             )
             # check_flooded_nodes(graph, heights, active_segments, GRID)
             key_lookup = {k: key for key in graph.keys() for k in key}
+            path = align_path(graph, key_lookup, path)
+            current_node = path[-1]
             continue
 
         selected_node = min(next_nodes, key=lambda node_key: heights[node_key[0]])
@@ -198,13 +267,6 @@ def distance_closest_point(end, node_key):
     return min(abs(end[0] - x[0]) + abs(end[1] - x[1]) for x in node_key)
 
 
-# TODO instead of using the center point use a search to generate a continous path through the merged node
-# When finding the final path:
-# Store the exact entry point from the previous node.
-# For each lake/ multi-point node encountered create a graph out of the grid where each edge in the grid is shorter if it's deeper.
-# Surface edge is 2 units, deepest edge is one unit
-# Find the shortest path from the entry node to the exit node.
-# If there are multiple exit nodes then consider them all to be equal weight.
 
 
 def measure_distance(path):
