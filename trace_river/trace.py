@@ -5,6 +5,7 @@ import rasterio as rio
 from matplotlib import pyplot as plt
 from pyproj import Proj
 
+from path_tracing import align_path, find_point_track
 from algorithms import add_segment_to_graph, flood_added_segment
 from graph import Graph
 from graph_verify import check_equal_height_nodes, check_flooded_nodes, do_keys_overlap
@@ -18,7 +19,7 @@ colour_tif_path = (
     Path(__name__).absolute().parent.parent.joinpath("tasmania", "colour.tif")
 )
 TIF_MAX_DIMENSIONS = (30978, 30978)
-GRID = 500
+GRID = 200
 assert heights_tif_path.exists()
 
 
@@ -40,93 +41,6 @@ def get_raster(segment):
     with rio.open(heights_tif_path) as heights:
         height_raster = heights.read(1, window=window)
         return height_raster
-
-
-def show_heights(heights, graph, active_segments, grid_size):
-    min_y = min(i[0] * grid_size for i in active_segments)
-    max_y = max((i[0] + 1) * grid_size for i in active_segments)
-    min_x = min(i[1] * grid_size for i in active_segments)
-    max_x = max((i[1] + 1) * grid_size for i in active_segments)
-    print(heights[min_y:max_y, min_x:max_x])
-
-    nodes = np.zeros((max_y - min_y, max_x - min_x), dtype=np.int16)
-    for i, nk in enumerate(graph):
-        for j in nk:
-            nodes[j[0] - min_y, j[1] - min_x] = i
-    # Print with layout matching above numbers
-    for row in range(max_y - min_y):
-        print(" [", end="")
-        for col in range(max_x - min_x):
-            print(f"{nodes[row, col]: <4}", end="")
-        print("]")
-
-
-def align_path(graph, key_lookup, path):
-    already_in_path = set()
-    fixed_path = []
-    for node in path:
-        if node not in graph:
-            new_node = key_lookup[node[0]]
-            if new_node not in already_in_path:
-                already_in_path.add(new_node)
-                fixed_path.append(new_node)
-        else:
-            if node not in already_in_path:
-                already_in_path.add(node)
-                fixed_path.append(node)
-    return fixed_path
-
-
-def find_exit_point(node, dest_node, heights):
-    def get_adjacent_points(point):
-        return [
-            (point[0]-1, point[1]),
-            (point[0]+1, point[1]),
-            (point[0], point[1]-1),
-            (point[0], point[1]+1),
-        ]
-
-    best_point = None
-    best_point_height = None
-    dest_point_set = set(dest_node)
-    for point in node:
-        if any(neighbour in dest_point_set for neighbour in get_adjacent_points(point)):
-            if best_point is None or heights[point] < best_point_height:
-                best_point = point
-                best_point_height = heights[point]
-    assert best_point is not None, "There should be a point which is adjacent to the other node"
-    return best_point
-
-
-def find_point_track(heights, path, start_point, track_data=None):
-    if track_data is None:
-        track_data = {}
-
-    entry_point = start_point
-    for node, dest_node in zip(path, path[1:]):
-        track_key = (entry_point, node, dest_node)
-        if track_key in track_data:
-            # The last point in the previous track is where the next point should start
-            entry_point = track_data[track_key][-1]
-        else:
-            exit_point = find_exit_point(node, dest_node, heights)
-            track = find_deep_path(node, entry_point, exit_point, heights)
-            track_data[track_key] = track
-    return track_data
-
-    # Store the exact entry point from the previous node.
-    # For each lake/ multi-point node encountered create a graph out of the grid where each edge in the grid is shorter if it's deeper.
-    # Surface edge is 2 units, deepest edge is one unit
-    # Find the shortest path from the entry node to the exit node.
-    # If there are multiple exit nodes then consider them all to be equal weight.
-
-    # Rules:
-    # A point track must leave a node at the deepest point which touches the next node
-    # A track must be a continous series of points
-    # The start point must be adjacent to the end of the previous node
-
-    # Data structure:
-    # {(entry point (next to node_key), node_key, destination_node_key): point_track where all the points are within node_key}
 
 
 def trace_and_expand_existing_graph(start_point, end_point):
@@ -153,6 +67,7 @@ def trace_and_expand_existing_graph(start_point, end_point):
     key_lookup = {k: key for key in graph.keys() for k in key}
     path = [key_lookup[start_rowcol]]
     assert key_lookup[start_rowcol] in graph
+    track_data = {}
 
     closest_finish_point = None
     finish_point_threshold = 10
@@ -169,7 +84,17 @@ def trace_and_expand_existing_graph(start_point, end_point):
         )
 
         if next_segment:
-            show_plot(heights, path, active_segments, GRID, start_rowcol, end_rowcol)
+            track_data = find_point_track(heights, path, start_rowcol, track_data)
+            show_plot(
+                heights,
+                path,
+                track_data,
+                active_segments,
+                GRID,
+                start_rowcol,
+                end_rowcol,
+            )
+
             do_keys_overlap(graph)
             print(f"Adding segment {next_segment}")
             active_segments.append(next_segment)
@@ -231,7 +156,7 @@ def detect_edge_touch(node, active_segments, grid_size):
                 return offset_point_segment
 
 
-def show_plot(heights, path, active_segments, grid_size, start, end):
+def show_plot(heights, path, track_data, active_segments, grid_size, start, end):
     min_height = None
     for segment in active_segments:
         segment_min = heights[
@@ -250,10 +175,10 @@ def show_plot(heights, path, active_segments, grid_size, start, end):
     selected_heights = heights[min_y:max_y, min_x:max_x]
     plt.imshow(selected_heights)
     plt.clim(min_height, heights.max())
-    for node in path:
-        point = find_centerpoint(node)
-        point = point[0] - min_y, point[1] - min_x
-        plt.plot(point[1], point[0], "yo")
+    for node, dest_node in zip(path, path[1:]):
+        for point in track_data[(node, dest_node)]:
+            point = point[0] - min_y, point[1] - min_x
+            plt.plot(point[1], point[0], "yo")
 
     plt.plot(start[1] - min_x, start[0] - min_y, "ro")
     if (end[0] // grid_size, end[1] // grid_size) in active_segments:
@@ -265,8 +190,6 @@ def show_plot(heights, path, active_segments, grid_size, start, end):
 
 def distance_closest_point(end, node_key):
     return min(abs(end[0] - x[0]) + abs(end[1] - x[1]) for x in node_key)
-
-
 
 
 def measure_distance(path):
@@ -302,8 +225,6 @@ if __name__ == "__main__":
     # end_point = (-41.62953442116648, 145.7696457139196)  # Vale takeout
     start_point = (-42.229119247079964, 145.81054340737677)  # Franklin putin
     end_point = (-42.285970802829496, 145.74782103623605)  # Franklin midway
-    # from ipdb import launch_ipdb_on_exception
-    # with launch_ipdb_on_exception():
     path, heights = trace_and_expand_existing_graph(start_point, end_point)
     measure_distance(path)
     elevation_profile(path, heights)
