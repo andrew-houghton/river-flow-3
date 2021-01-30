@@ -82,7 +82,6 @@ def find_point_track(heights, path, start_point, track_data):
             assert track[-1] == exit_point, "Track must finish at exit point"
             track_data[track_key] = track
             entry_point = exit_point
-    print(f"{len(path)=} {len(track_data)=}")
     return track_data
 
 

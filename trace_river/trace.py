@@ -69,8 +69,8 @@ def trace_and_expand_existing_graph(start_point, end_point):
     assert key_lookup[start_rowcol] in graph
     track_data = {}
 
-    closest_finish_point = None
-    finish_point_threshold = 10
+    closest_finish_node = None
+    finish_point_threshold = 50
     plt.get_current_fig_manager().full_screen_toggle()
     plt.ion()
     plt.show()
@@ -117,15 +117,28 @@ def trace_and_expand_existing_graph(start_point, end_point):
 
         selected_node = min(next_nodes, key=lambda node_key: heights[node_key[0]])
         distance = distance_closest_point(end_rowcol, selected_node)
-        closest_finish_node = None
-        if closest_finish_node is not None:
+        if closest_finish_node is None:
+            if distance < finish_point_threshold:
+                closest_finish_node = selected_node
+        else:
             if distance > distance_closest_point(end_rowcol, closest_finish_node):
                 # We're getting further away so just finish without the last point
-                break
+                # TODO terminate path at closest_finish_node
+                plt.ioff()
+                track_data = find_point_track(heights, path, start_rowcol, track_data)
+                show_plot(
+                    heights,
+                    path,
+                    track_data,
+                    active_segments,
+                    GRID,
+                    start_rowcol,
+                    end_rowcol,
+                )
+                plt.show()
+                return path, heights
             else:
                 closest_finish_node = selected_node
-        elif distance < finish_point_threshold:
-            closest_finish_node = selected_node
 
         path.append(selected_node)
 
@@ -194,10 +207,10 @@ def measure_distance(path):
         distance += (
             (point[0] - next_point[0]) ** 2 + (point[1] - next_point[1]) ** 2
         ) ** 0.5
-    print(f"River distance {distance/100:.2f}km")
+    return f"River distance {distance/100:.2f}km"
 
 
-def elevation_profile(path, heights):
+def elevation_profile(path, heights, dist_string=None):
     distance = 0
     x = [0]
     y = [heights[path[0][0]]]
@@ -211,15 +224,20 @@ def elevation_profile(path, heights):
         x.append(distance / 100)  # Distance in km
         y.append(heights[next_point[0]])
     plt.plot(x, y)
-    plt.show()
-    print(f"Avg gradient {(max(y)-min(y))/(distance/100):.0f}m/km")
+    fig_text = f"Avg gradient {(max(y)-min(y))/(distance/100):.0f}m/km"
+    if dist_string:
+        fig_text += "\n"
+        fig_text += dist_string
+    plt.figtext(0.5, 0.01, fig_text, ha="center", fontsize=18, bbox={"facecolor":"orange", "alpha":0.5, "pad":5})
+    plt.get_current_fig_manager().full_screen_toggle()
 
+    plt.show()
 
 if __name__ == "__main__":
-    # start_point = (-41.55327294639188, 145.87881557530164)  # Vale putin
-    # end_point = (-41.62953442116648, 145.7696457139196)  # Vale takeout
-    start_point = (-42.229119247079964, 145.81054340737677)  # Franklin putin
-    end_point = (-42.285970802829496, 145.74782103623605)  # Franklin midway
+    start_point = (-41.55327294639188, 145.87881557530164)  # Vale putin
+    end_point = (-41.62953442116648, 145.7696457139196)  # Vale takeout
+    # start_point = (-42.229119247079964, 145.81054340737677)  # Franklin putin
+    # end_point = (-42.285970802829496, 145.74782103623605)  # Franklin midway
     path, heights = trace_and_expand_existing_graph(start_point, end_point)
-    measure_distance(path)
-    elevation_profile(path, heights)
+    dist_string = measure_distance(path)
+    elevation_profile(path, heights, dist_string)
