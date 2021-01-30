@@ -133,11 +133,6 @@ def trace_and_expand_existing_graph(start_point, end_point):
     return path, heights
 
 
-def apply_window_to_rowcol(window, rowcol):
-    # Convert co-ordinates to be relative to a window
-    return rowcol[0] - window.row_off, rowcol[1] - window.col_off
-
-
 def find_centerpoint(node_key):
     x = sum(i[0] for i in node_key) / len(node_key)
     y = sum(i[1] for i in node_key) / len(node_key)
@@ -178,7 +173,7 @@ def show_plot(heights, path, track_data, active_segments, grid_size, start, end)
     for node, dest_node in zip(path, path[1:]):
         for point in track_data[(node, dest_node)]:
             point = point[0] - min_y, point[1] - min_x
-            plt.plot(point[1], point[0], "yo")
+            plt.plot(point[1], point[0], "yo", markersize=1)
 
     plt.plot(start[1] - min_x, start[0] - min_y, "ro")
     if (end[0] // grid_size, end[1] // grid_size) in active_segments:
